@@ -39,6 +39,42 @@ PUB Checksum(msg_ptr) | idx, tmp
 
     result := int.StrToBase (@tmp, 16)
 
+PUB Latitude(msg_ptr) | idx, tmp[3]
+' Extract latitude from a sentence
+'   Returns: Latitude in degrees and minutes packed into long
+'   Example:
+'       40056475
+'        | |   |
+'        | |   Minutes (part)
+'        | Minutes (whole)
+'        Degrees
+'       -----------------------
+'       40 deg, 05.6475 minutes
+    repeat idx from 17 to 20
+        tmp.byte[idx-17] := byte[msg_ptr][idx]
+    repeat idx from 22 to 25
+        tmp.byte[idx-17] := byte[msg_ptr][idx]
+
+    return int.StrToBase (@tmp, 10)
+
+PUB Longitude(msg_ptr) | idx, tmp[3]
+' Extract latitude from a sentence
+'   Returns: Latitude in degrees and minutes packed into long
+'   Example:
+'       074114014
+'         | |   |
+'         | |   Minutes (part)
+'         | Minutes (whole)
+'         Degrees
+'       -----------------------
+'       074 deg, 11.4014 minutes
+    repeat idx from 29 to 33
+        tmp.byte[idx-29] := byte[msg_ptr][idx]
+    repeat idx from 35 to 38
+        tmp.byte[idx-30] := byte[msg_ptr][idx]
+
+    return int.StrToBase (@tmp, 10)
+
 PUB SentenceID(msg_ptr) | idx, tmp
 ' Extract Sentence ID from a sentence
 '   Returns: Integer corresponding to ID found in lookdown table if found, or 0 if no match
