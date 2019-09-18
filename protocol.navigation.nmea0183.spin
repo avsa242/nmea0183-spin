@@ -101,6 +101,34 @@ PUB TalkerID(msg_ptr)
 '   Returns: Integer corresponding to ID found in lookdown table if found, or 0 if no match
     return lookdown(byte[msg_ptr][1]: "L", "N", "P")
 
+PUB TimeHours(msg_ptr) | tmp
+' Return Hours portion from Time expressed as HHMMSS
+    return TimeOfDay (msg_ptr) / 10_000
+
+PUB TimeMinutes(msg_ptr)
+' Return Minutes portion from Time expressed as HHMMSS
+    result := (TimeOfDay (msg_ptr) // 10_000) / 100
+
+PUB TimeSeconds(msg_ptr)
+' Return Seconds portion from Time expressed as HHMMSS
+    result := (TimeOfDay (msg_ptr) // 100)
+
+PUB TimeOfDay(msg_ptr) | idx, tmp[2]
+' Extract time of day from a sentence
+'   Returns: Time, in hours, minutes, seconds packed into long
+'   Example:
+'       231650
+'        | | |
+'        | | Seconds
+'        | Minutes
+'        Hours (Zulu)
+'       -----------------------
+'       23h, 16m, 50s (23:16:50)
+    repeat idx from 6 to 11
+        tmp.byte[idx-6] := byte[msg_ptr][idx]
+
+    return int.StrToBase (@tmp, 10)
+
 PUB Verify(msg_ptr) | idx
 ' Calculate checksum of a sentence
 '   Returns: Calculated 8-bit checksum of sentence
