@@ -4,142 +4,190 @@
     Author: Jesse Burt
     Description: Library of functions for parsing
         NMEA-0183 sentences
-    Copyright (c) 2019
+    Copyright (c) 2021
     Started Sep 7, 2019
-    Updated Sep 8, 2019
+    Updated Feb 7, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    SENTENCE_MAX_LEN    = 81
+    SENTNC_MAX_LEN    = 81
 
 ' NMEA-0183 Sentence ID types
-    SENTENCE_ID_GGA     = 1
-    SENTENCE_ID_GSA     = 2
-    SENTENCE_ID_GSV     = 3
-    SENTENCE_ID_RMC     = 4
-    SENTENCE_ID_VTG     = 5
+    SNTID_VTG       = $475456
+    SNTID_GGA       = $414747
+    SNTID_GSA       = $415347
+    SNTID_RMC       = $434D52
+    SNTID_GSV       = $565347
+
+' Datum indices (byte offsets from sentence start)
+    TID_ST          = 0
+    TID_END         = 1
+    SID_ST          = 2
+    SID_END         = 4
+    TIME_ST         = 6
+    TIME_END        = 11
+    GGA_LATDEG_ST   = 17
+    GGA_LATDEG_END  = 20
+    GGA_LATMINP_ST  = 22
+    GGA_LATMINP_END = 25
+    GGA_LONGDEG_ST  = 29
+    GGA_LONGDEG_END = 33
+    GGA_LONGMINP_ST = 35
+    GGA_LONGMINP_END= 38
+
+    RMC_LATDEG_ST   = 19
+    RMC_LATDEG_END  = 21
+    RMC_LATMINP_ST  = 24
+    RMC_LATMINP_END = 27
+    RMC_LONGDEG_ST  = 31
+    RMC_LONGDEG_END = 35
+    RMC_LONGMINP_ST = 37
+    RMC_LONGMINP_END= 40
+
+    CRCMARKER       = "*"
 
 OBJ
 
-    int     : "string.integer"
+    int : "string.integer"
 
 VAR
 
-PUB Checksum(msg_ptr) | idx, tmp
+    long _ptr_sntnc
+
+PUB Checksum{}: rd_ck | idx, tmp
 ' Extract Checksum from a sentence
-'   Returns: Checksum contained in sentence at msg_ptr
+'   Returns: Checksum contained in sentence at _ptr_sntnc
     idx := 0
-    repeat while byte[msg_ptr][++idx] <> "*"
-    tmp.byte[0] := byte[msg_ptr][++idx]
-    tmp.byte[1] := byte[msg_ptr][++idx]
-    tmp.word[1] := $0000
+    repeat until byte[_ptr_sntnc][++idx] == CRCMARKER
+    tmp.byte[0] := byte[_ptr_sntnc][++idx]
+    tmp.byte[1] := byte[_ptr_sntnc][++idx]
+    tmp.word[1] := 0
 
-    result := int.StrToBase (@tmp, 16)
+    return int.strtobase(@tmp, 16)
 
-PUB Latitude(msg_ptr) | idx, tmp[3]
+PUB GenChecksum{}: cks_valid | idx
+' Calculate checksum of a sentence
+'   Returns: Calculated 8-bit checksum of sentence
+    cks_valid := idx := 0
+
+    repeat
+        cks_valid ^= byte[_ptr_sntnc][idx]
+    while byte[_ptr_sntnc][++idx] <> "*"
+
+    return cks_valid & $FF
+
+PUB Hours{}: h
+' Return: last read hours (u8)
+    return (timeofday{} / 10_000)
+
+PUB Latitude{}: lat | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
 ' Extract latitude from a sentence
 '   Returns: Latitude in degrees and minutes packed into long
 '   Example:
-'       40056475
-'        | |   |
-'        | |   Minutes (part)
-'        | Minutes (whole)
+'       40 05 6475
+'        |  |    |
+'        |  |    Minutes (part)
+'        |  Minutes (whole)
 '        Degrees
 '       -----------------------
 '       40 deg, 05.6475 minutes
-    repeat idx from 17 to 20
-        tmp.byte[idx-17] := byte[msg_ptr][idx]
-    repeat idx from 22 to 25
-        tmp.byte[idx-17] := byte[msg_ptr][idx]
+    outidx := 0
+    case sentenceid
+        SNTID_GGA:
+            deg_st := GGA_LATDEG_ST
+            deg_end := GGA_LATDEG_END
+            min_st := GGA_LATMINP_ST
+            min_end := GGA_LATMINP_END
+        SNTID_RMC:
+            deg_st := RMC_LATDEG_ST
+            deg_end := RMC_LATDEG_END
+            min_st := RMC_LATMINP_ST
+            min_end := RMC_LATMINP_END
 
-    return int.StrToBase (@tmp, 10)
+    repeat idx from deg_st to deg_end
+        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
+    repeat idx from min_st to min_end
+        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
 
-PUB Longitude(msg_ptr) | idx, tmp[3]
-' Extract latitude from a sentence
-'   Returns: Latitude in degrees and minutes packed into long
+    return int.strtobase(@tmp, 10)
+
+PUB Longitude{}: lon | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
+' Extract longitude from a sentence
+'   Returns: Longitude in degrees and minutes packed into long
 '   Example:
-'       074114014
-'         | |   |
-'         | |   Minutes (part)
-'         | Minutes (whole)
+'       074 11 4014
+'         |  |    |
+'         |  |    Minutes (part)
+'         |  Minutes (whole)
 '         Degrees
 '       -----------------------
 '       074 deg, 11.4014 minutes
-    repeat idx from 29 to 33
-        tmp.byte[idx-29] := byte[msg_ptr][idx]
-    repeat idx from 35 to 38
-        tmp.byte[idx-30] := byte[msg_ptr][idx]
+    outidx := 0
+    case sentenceid
+        SNTID_GGA:
+            deg_st := GGA_LONGDEG_ST
+            deg_end := GGA_LONGDEG_END
+            min_st := GGA_LONGMINP_ST
+            min_end := GGA_LONGMINP_END
+        SNTID_RMC:
+            deg_st := RMC_LONGDEG_ST
+            deg_end := RMC_LONGDEG_END
+            min_st := RMC_LONGMINP_ST
+            min_end := RMC_LONGMINP_END
 
-    return int.StrToBase (@tmp, 10)
+    repeat idx from deg_st to deg_end
+        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
+    repeat idx from min_st to min_end
+        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
 
-PUB SentenceID(msg_ptr) | idx, tmp
+    return int.strtobase(@tmp, 10)
+
+PUB Minutes{}: m
+' Return last read minutes (u8)
+    return ((timeofday{} // 10_000) / 100)
+
+PUB Seconds{}: s
+' Return last read seconds (u8)
+    return (timeofday{} // 100)
+
+PUB SentencePtr(ptr_sntnc)
+' Set pointer to NMEA0183 sentence data
+    case ptr_sntnc
+        $0004..$7fae:
+            _ptr_sntnc := ptr_sntnc
+        other:
+            return _ptr_sntnc
+
+PUB SentenceID{}: sid | idx
 ' Extract Sentence ID from a sentence
-'   Returns: Integer corresponding to ID found in lookdown table if found, or 0 if no match
-    tmp := $00_00_00_00
-    repeat idx from 2 to 4
-        tmp.byte[idx-2] := byte[msg_ptr][idx]
-    tmp.byte[3] := 0
+'   Returns: 3-byte sentence ID (ASCII)
+    repeat idx from SID_ST to SID_END
+        sid.byte[idx-SID_ST] := byte[_ptr_sntnc][idx]
 
-    if strcomp(@tmp, string("GGA"))
-        result := SENTENCE_ID_GGA
-    elseif strcomp(@tmp, string("GSA"))
-        result := SENTENCE_ID_GSA
-    elseif strcomp(@tmp, string("GSV"))
-        result := SENTENCE_ID_GSV
-    elseif strcomp(@tmp, string("RMC"))
-        result := SENTENCE_ID_RMC
-    elseif strcomp(@tmp, string("VTG"))
-        result := SENTENCE_ID_VTG
-    else
-        result := FALSE
-
-PUB TalkerID(msg_ptr)
+PUB TalkerID{}: tid
 ' Extract Talker ID from a sentence
-'   Returns: Integer corresponding to ID found in lookdown table if found, or 0 if no match
-    return lookdown(byte[msg_ptr][1]: "L", "N", "P")
+'   Returns:
+'       2-byte talker ID (ASCII)
+    return word[_ptr_sntnc][TID_ST]
 
-PUB TimeHours(msg_ptr) | tmp
-' Return Hours portion from Time expressed as HHMMSS
-    return TimeOfDay (msg_ptr) / 10_000
-
-PUB TimeMinutes(msg_ptr)
-' Return Minutes portion from Time expressed as HHMMSS
-    result := (TimeOfDay (msg_ptr) // 10_000) / 100
-
-PUB TimeSeconds(msg_ptr)
-' Return Seconds portion from Time expressed as HHMMSS
-    result := (TimeOfDay (msg_ptr) // 100)
-
-PUB TimeOfDay(msg_ptr) | idx, tmp[2]
+PUB TimeOfDay{}: tod | idx, tmp[3]
 ' Extract time of day from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
-'       231650
-'        | | |
-'        | | Seconds
-'        | Minutes
+'       23 16 50
+'        |  |  |
+'        |  | Seconds
+'        |  Minutes
 '        Hours (Zulu)
 '       -----------------------
 '       23h, 16m, 50s (23:16:50)
-    repeat idx from 6 to 11
-        tmp.byte[idx-6] := byte[msg_ptr][idx]
+    repeat idx from TIME_END to TIME_ST
+        tmp.byte[idx-6] := byte[_ptr_sntnc][idx]
 
-    return int.StrToBase (@tmp, 10)
-
-PUB Verify(msg_ptr) | idx
-' Calculate checksum of a sentence
-'   Returns: Calculated 8-bit checksum of sentence
-    result := idx := 0
-
-    repeat
-        result ^= byte[msg_ptr][idx]
-    while byte[msg_ptr][++idx] <> "*"
-
-    return result & $FF
-
+    return int.strtobase(@tmp, 10)              ' conv. string to long
 
 DAT
 {

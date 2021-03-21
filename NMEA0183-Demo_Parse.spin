@@ -5,87 +5,135 @@
     Description: Simple demo that uses the NMEA0183 object
         to parse sentences read from a compatible 9600bps-connected
         GPS module and displays the data on the terminal.
-
-    Copyright (c) 2019
+    Copyright (c) 2021
     Started Sep 8, 2019
-    Updated Sep 8, 2019
+    Updated Mar 21, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    _clkmode            = cfg#_clkmode
-    _xinfreq            = cfg#_xinfreq
+    _clkmode    = cfg#_clkmode
+    _xinfreq    = cfg#_xinfreq
 
-    SENTENCE_MAX_LEN    = 81
+' -- User-modifiable constants
+    LED         = cfg#LED1
+    SER_BAUD    = 115_200
+
+    GPS_TXD     = 18
+    GPS_RXD     = 17
+    GPS_BAUD    = 9600
+' --
 
 OBJ
 
     cfg     : "core.con.boardcfg.flip"
-    ser     : "com.serial.terminal"
+    ser     : "com.serial.terminal.ansi"
     gps     : "com.serial.terminal"
     time    : "time"
+    int     : "string.integer"
     nmea    : "protocol.navigation.nmea0183"
 
 VAR
 
-    byte _gps_cog, _ser_cog
-    byte _sentence[SENTENCE_MAX_LEN]
+    byte _sentence[nmea#SENTNC_MAX_LEN]
 
-PUB Main | gps_rx, idx, msg_count
+PUB Main{} | gps_rx, idx, talk_id, sent_id, allow
 
-    Setup
-    ser.Clear
-    msg_count := 0
+    setup{}
 
+    nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
+                                                '   the raw sentence data is
+
+    allow := nmea#SNTID_RMC
     repeat
+        ' clear out sentence buffer
+        bytefill(@_sentence, 0, nmea#SENTNC_MAX_LEN)
         idx := 0
-        if msg_count > 10
-            msg_count := 0
-            ser.Clear
-        repeat until gps.CharIn == "$"
+        repeat until gps.charin{} == "$"        ' start of sentence
         repeat
-            gps_rx := gps.CharIn
+            gps_rx := gps.charin{}              ' read sentence data (ASCII)
             _sentence[idx++] := gps_rx
-        until gps_rx == ser#NL
+        until gps_rx == ser#CR                  ' end of sentence
         idx := 0
 
-        ser.Str (string("Sentence: "))
-        repeat
-            ser.Char (_sentence[idx])
-        until _sentence[++idx] == 13
-        ser.NewLine
+        talk_id := nmea.talkerid{}
+        sent_id := nmea.sentenceid{}
 
-        ser.Str (string("Talker ID: "))
-        ser.Dec (nmea.TalkerID (@_sentence))
-        ser.NewLine
+        case sent_id
+            0, allow:                           ' if not the chosen sentence
+            other:                              ' type (or if 0), then skip it
+                next
 
-        ser.Str (string("Sentence ID: "))
-        ser.Dec (nmea.SentenceID (@_sentence))
-        ser.NewLine
+        ser.str(string("Sentence: "))
+        repeat                                  ' display raw sentence
+            ser.char(_sentence[idx])
+        until _sentence[++idx] == ser#CR
+        ser.clearline{}
+        ser.newline{}
 
-        ser.Str (string("Checksum: "))
-        ser.Hex (nmea.Checksum (@_sentence), 2)
-        if nmea.Checksum (@_sentence) == nmea.Verify (@_sentence)
-            ser.Str (string(" (GOOD)", ser#NL))
+        case sent_id
+            nmea#SNTID_VTG:
+
+            nmea#SNTID_GGA:
+                display_gga{}
+            nmea#SNTID_GSA:
+
+            nmea#SNTID_RMC:
+                display_rmc{}
+            nmea#SNTID_GSV:
+
+            other:
+                ser.str(string("Talker ID: "))
+                ser.char(talk_id.byte[0])
+                ser.char(talk_id.byte[1])
+                ser.newline{}
+
+                ser.str(string("Sentence ID: "))
+                ser.char(sent_id.byte[0])
+                ser.char(sent_id.byte[1])
+                ser.char(sent_id.byte[2])
+                ser.char(" ")
+                ser.hex(sent_id, 6)
+
+                ser.newline{}
+
+        ser.str(string("Checksum: "))
+        ser.hex(nmea.checksum{}, 2)
+        if nmea.checksum{} == nmea.genchecksum{}
+            ser.strln(string(" (GOOD)"))
         else
-            ser.Str (string(" (BAD - got ", ser#NL))
-            ser.Hex (nmea.Verify (@_sentence), 2)
-            ser.Str (string(")", ser#NL))
+            ser.str(string(" (BAD - got "))
+            ser.hex(nmea.genchecksum{}, 2)
+            ser.strln(string(")"))
 
-        ser.NewLine
+        ser.newline{}
 
-        bytefill(@_sentence, $00, SENTENCE_MAX_LEN)
-        msg_count++
+PUB Display_GGA{}
 
-PUB Setup
+    ser.str(string("Latitude: "))
+    ser.str(int.deczeroed(nmea.latitude{}, 8))
+    ser.str(string("    Longitude: "))
+    ser.strln(int.deczeroed(nmea.longitude{}, 9))
+    ser.newline{}
 
-    repeat until _ser_cog := ser.Start (115_200)
-    ser.Clear
-    ser.Str(string("Serial terminal started", ser#NL))
-    repeat until _gps_cog := gps.StartRxTx (8, 9, %0000, 9600)
-    gps.Str(string("GPS serial started", ser#NL))
+PUB Display_RMC{}
+
+    ser.str(string("Latitude: "))
+    ser.str(int.deczeroed(nmea.latitude{}, 8))
+    ser.str(string("    Longitude: "))
+    ser.strln(int.deczeroed(nmea.longitude{}, 9))
+    ser.newline{}
+
+PUB Setup{}
+
+    ser.start(SER_BAUD)
+    time.msleep(30)
+    ser.clear{}
+    ser.strln(string("Serial terminal started"))
+    gps.startrxtx(GPS_TXD, GPS_RXD, %0000, GPS_BAUD)
+    gps.strln(string("GPS serial started"))
 
 DAT
 {
