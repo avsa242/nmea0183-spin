@@ -6,14 +6,14 @@
         NMEA-0183 sentences
     Copyright (c) 2021
     Started Sep 7, 2019
-    Updated Feb 7, 2021
+    Updated Mar 24, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    SENTNC_MAX_LEN    = 81
+    SENTNC_MAX_LEN  = 81
 
 ' NMEA-0183 Sentence ID types
     SNTID_VTG       = $475456
@@ -38,6 +38,41 @@ CON
     GGA_LONGMINP_ST = 35
     GGA_LONGMINP_END= 38
 
+' GGA field indices
+
+    GGA_TALKID      = 0
+    GGA_ZTIME       = 1
+    GGA_LAT         = 2
+    GGA_NS          = 3
+    GGA_LON         = 4
+    GGA_EW          = 5
+    GGA_GPSQUAL     = 6
+    GGA_SATSUSED    = 7
+    GGA_HDOP        = 8
+    GGA_ALT         = 9
+    GGA_ALTUNITS    = 10
+    GGA_GEOID_SEP   = 11
+    GGA_GEOID_UNITS = 12
+    GGA_DIFFCORR_AGE= 13
+    GGA_DGPS_SID    = 14
+    GGA_CHKSUM      = 15
+
+' RMC field indices
+    RMC_TALKID      = 0
+    RMC_ZTIME       = 1
+    RMC_STATUS      = 2
+    RMC_LAT         = 3
+    RMC_NS          = 4
+    RMC_LONG        = 5
+    RMC_EW          = 6
+    RMC_SOG         = 7
+    RMC_COG         = 8
+    RMC_ZDATE       = 9
+    RMC_MAGVAR      = 10
+    RMC_MAGVAR_EW   = 11
+    RMC_MODE        = 12
+    RMC_CHKSUM      = 13
+
     RMC_LATDEG_ST   = 19
     RMC_LATDEG_END  = 21
     RMC_LATMINP_ST  = 24
@@ -52,6 +87,7 @@ CON
 OBJ
 
     int : "string.integer"
+    str : "string"
 
 VAR
 
@@ -173,7 +209,7 @@ PUB TalkerID{}: tid
 '       2-byte talker ID (ASCII)
     return word[_ptr_sntnc][TID_ST]
 
-PUB TimeOfDay{}: tod | idx, tmp[3]
+PUB TimeOfDay{}: tod | idx, ztime, tmp[2]
 ' Extract time of day from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
@@ -184,9 +220,9 @@ PUB TimeOfDay{}: tod | idx, tmp[3]
 '        Hours (Zulu)
 '       -----------------------
 '       23h, 16m, 50s (23:16:50)
-    repeat idx from TIME_END to TIME_ST
-        tmp.byte[idx-6] := byte[_ptr_sntnc][idx]
-
+    ' GGA and RMC sentences both provide UTC/Zulu time in the same field
+    ztime := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
+    str.left(@tmp, ztime, 6)
     return int.strtobase(@tmp, 10)              ' conv. string to long
 
 DAT
