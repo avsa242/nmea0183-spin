@@ -33,10 +33,10 @@ CON
     GGA_LATDEG_END  = 20
     GGA_LATMINP_ST  = 22
     GGA_LATMINP_END = 25
-    GGA_LONGDEG_ST  = 29
-    GGA_LONGDEG_END = 33
-    GGA_LONGMINP_ST = 35
-    GGA_LONGMINP_END= 38
+    GGA_LONGGDEG_ST  = 29
+    GGA_LONGGDEG_END = 33
+    GGA_LONGGMINP_ST = 35
+    GGA_LONGGMINP_END= 38
 
 ' GGA field indices
 
@@ -44,7 +44,7 @@ CON
     GGA_ZTIME       = 1
     GGA_LAT         = 2
     GGA_NS          = 3
-    GGA_LON         = 4
+    GGA_LONG        = 4
     GGA_EW          = 5
     GGA_GPSQUAL     = 6
     GGA_SATSUSED    = 7
@@ -119,7 +119,7 @@ PUB Hours{}: h
 ' Return: last read hours (u8)
     return (timeofday{} / 10_000)
 
-PUB Latitude{}: lat | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
+PUB Latitude{}: lat | tmp
 ' Extract latitude from a sentence
 '   Returns: Latitude in degrees and minutes packed into long
 '   Example:
@@ -130,27 +130,16 @@ PUB Latitude{}: lat | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
 '        Degrees
 '       -----------------------
 '       40 deg, 05.6475 minutes
-    outidx := 0
     case sentenceid
         SNTID_GGA:
-            deg_st := GGA_LATDEG_ST
-            deg_end := GGA_LATDEG_END
-            min_st := GGA_LATMINP_ST
-            min_end := GGA_LATMINP_END
+            tmp := str.getfield(_ptr_sntnc, GGA_LAT, ",")
+            str.stripchar(tmp, ".")
         SNTID_RMC:
-            deg_st := RMC_LATDEG_ST
-            deg_end := RMC_LATDEG_END
-            min_st := RMC_LATMINP_ST
-            min_end := RMC_LATMINP_END
+            tmp := str.getfield(_ptr_sntnc, RMC_LAT, ",")
+            str.stripchar(tmp, ".")
+    return int.strtobase(tmp, 10)
 
-    repeat idx from deg_st to deg_end
-        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
-    repeat idx from min_st to min_end
-        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
-
-    return int.strtobase(@tmp, 10)
-
-PUB Longitude{}: lon | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
+PUB Longitude{}: lon | tmp
 ' Extract longitude from a sentence
 '   Returns: Longitude in degrees and minutes packed into long
 '   Example:
@@ -161,25 +150,14 @@ PUB Longitude{}: lon | idx, outidx, tmp[3], deg_st, deg_end, min_st, min_end
 '         Degrees
 '       -----------------------
 '       074 deg, 11.4014 minutes
-    outidx := 0
     case sentenceid
         SNTID_GGA:
-            deg_st := GGA_LONGDEG_ST
-            deg_end := GGA_LONGDEG_END
-            min_st := GGA_LONGMINP_ST
-            min_end := GGA_LONGMINP_END
+            tmp := str.getfield(_ptr_sntnc, GGA_LONG, ",")
+            str.stripchar(tmp, ".")
         SNTID_RMC:
-            deg_st := RMC_LONGDEG_ST
-            deg_end := RMC_LONGDEG_END
-            min_st := RMC_LONGMINP_ST
-            min_end := RMC_LONGMINP_END
-
-    repeat idx from deg_st to deg_end
-        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
-    repeat idx from min_st to min_end
-        tmp.byte[outidx++] := byte[_ptr_sntnc][idx]
-
-    return int.strtobase(@tmp, 10)
+            tmp := str.getfield(_ptr_sntnc, RMC_LONG, ",")
+            str.stripchar(tmp, ".")
+    return int.strtobase(tmp, 10)
 
 PUB Minutes{}: m
 ' Return last read minutes (u8)
@@ -191,6 +169,8 @@ PUB Seconds{}: s
 
 PUB SentencePtr(ptr_sntnc)
 ' Set pointer to NMEA0183 sentence data
+'   Valid values: $0004..$7fae
+'   Any other value returns the current setting
     case ptr_sntnc
         $0004..$7fae:
             _ptr_sntnc := ptr_sntnc
