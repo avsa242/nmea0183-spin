@@ -6,7 +6,7 @@
         NMEA-0183 sentences
     Copyright (c) 2021
     Started Sep 7, 2019
-    Updated Mar 24, 2021
+    Updated Mar 30, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -85,6 +85,17 @@ PUB Checksum{}: rd_ck | idx, tmp
 
     return int.strtobase(@tmp, 16)
 
+PUB EastWest{}: ew | tmp
+' Indicates East/West of Prime Meridian
+'   Returns: E or W (ASCII)
+    case sentenceid{}
+        SNTID_GGA:
+            tmp := str.getfield(_ptr_sntnc, GGA_EW, ",")
+        SNTID_RMC:
+            tmp := str.getfield(_ptr_sntnc, RMC_EW, ",")
+
+    str.copy(@ew, tmp)
+
 PUB GenChecksum{}: cksum | idx
 ' Calculate checksum of a sentence
 '   Returns: Calculated 8-bit checksum of sentence
@@ -143,6 +154,16 @@ PUB Longitude{}: lon | tmp
 PUB Minutes{}: m
 ' Return last read minutes (u8)
     return ((timeofday{} // 10_000) / 100)
+
+PUB NorthSouth{}: ns | tmp
+' Indicates North/South of equator
+'   Returns: N/S (ASCII)
+    case sentenceid{}
+        SNTID_GGA:
+            tmp := str.getfield(_ptr_sntnc, GGA_NS, ",")
+        SNTID_RMC:
+            tmp := str.getfield(_ptr_sntnc, RMC_NS, ",")
+    str.copy(@ns, tmp)
 
 PUB Seconds{}: s
 ' Return last read seconds (u8)
