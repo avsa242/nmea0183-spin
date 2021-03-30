@@ -189,6 +189,14 @@ PUB GenChecksum{}: cksum | idx
 
     return cksum & $FF
 
+PUB HDOP{}: h | tmp
+' Horizontal dilution of precision
+'   Returns: DOP (hundredths)
+    if sentenceid{} == SNTID_GSA
+        tmp := str.getfield(_ptr_sntnc, GSA_HDOP, ",")
+        str.stripchar(tmp, ".")
+        return int.strtobase(tmp, DEC)
+
 PUB Hours{}: h
 ' Return: last read hours (u8)
     return (timeofday{} / 10_000)
@@ -254,6 +262,14 @@ PUB NorthSouth{}: ns | tmp
             tmp := str.getfield(_ptr_sntnc, RMC_NS, ",")
     str.copy(@ns, tmp)
 
+PUB PDOP{}: p | tmp
+' Position dilution of precision
+'   Returns: DOP (hundredths)
+    if sentenceid{} == SNTID_GSA
+        tmp := str.getfield(_ptr_sntnc, GSA_PDOP, ",")
+        str.stripchar(tmp, ".")
+        return int.strtobase(tmp, DEC)
+
 PUB Seconds{}: s
 ' Return last read seconds (u8)
     return (timeofday{} // 100)
@@ -316,6 +332,14 @@ PUB TimeOfDay{}: tod | ztime, tmp[2]
     ztime := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
     str.left(@tmp, ztime, 6)
     return int.strtobase(@tmp, DEC)             ' conv. string to long
+
+PUB VDOP{}: v | tmp
+' Vertical dilution of precision
+'   Returns: DOP (hundredths)
+    if sentenceid{} == SNTID_GSA
+        tmp := str.getfield(_ptr_sntnc, GSA_VDOP, ",")
+        str.stripchar(tmp, ".")
+        return int.strtobase(tmp, DEC)
 
 PUB Year{}: y | tmp
 ' Get current year
