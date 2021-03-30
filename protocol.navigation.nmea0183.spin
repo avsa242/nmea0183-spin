@@ -56,12 +56,25 @@ CON
     RMC_LONG        = 5
     RMC_EW          = 6
     RMC_SOG         = 7
-    RMC_COG         = 8
+    RMC_COGT        = 8
     RMC_ZDATE       = 9
     RMC_MAGVAR      = 10
     RMC_MAGVAR_EW   = 11
     RMC_MODE        = 12
     RMC_CHKSUM      = 13
+
+' VTG field indices
+    VTG_TALKID      = 0
+    VTG_COGT        = 1
+    VTG_REFT        = 2
+    VTG_COGM        = 3
+    VTG_REFM        = 4
+    VTG_SPD_KTS     = 5
+    VTG_SPDUNITKTS  = 6
+    VTG_SPD_KMH     = 7
+    VTG_SPDUNITKMH  = 8
+    VTG_MODE        = 9
+    VTG_CHKSUM      = 10
 
     CRCMARKER       = "*"
 
@@ -84,6 +97,27 @@ PUB Checksum{}: rd_ck | idx, tmp
     tmp.word[1] := 0
 
     return int.strtobase(@tmp, 16)
+
+PUB CourseMagnetic{}: c
+' Course over ground (magnetic)
+'   Returns: hundredths of a degree
+    if sentenceid{} == SNTID_VTG
+        c := str.getfield(_ptr_sntnc, VTG_COGM, ",")
+        str.stripchar(c, ".")
+        return int.strtobase(c, 10)
+
+PUB CourseTrue{}: c
+' Course over ground (true)
+'   Returns: hundredths of a degree
+    case sentenceid{}
+        SNTID_VTG:
+            c := str.getfield(_ptr_sntnc, VTG_COGT, ",")
+            str.stripchar(c, ".")
+            return int.strtobase(c, 10)
+        SNTID_RMC:
+            c := str.getfield(_ptr_sntnc, RMC_COGT, ",")
+            str.stripchar(c, ".")
+            return int.strtobase(c, 10)
 
 PUB EastWest{}: ew | tmp
 ' Indicates East/West of Prime Meridian
