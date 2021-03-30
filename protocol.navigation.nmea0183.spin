@@ -78,6 +78,9 @@ CON
 
     CRCMARKER       = "*"
 
+    DEC             = 10
+    HEX             = 16
+
 OBJ
 
     int : "string.integer"
@@ -96,7 +99,7 @@ PUB Checksum{}: rd_ck | idx, tmp
     tmp.byte[1] := byte[_ptr_sntnc][++idx]
     tmp.word[1] := 0
 
-    return int.strtobase(@tmp, 16)
+    return int.strtobase(@tmp, HEX)
 
 PUB CourseMagnetic{}: c
 ' Course over ground (magnetic)
@@ -104,7 +107,7 @@ PUB CourseMagnetic{}: c
     if sentenceid{} == SNTID_VTG
         c := str.getfield(_ptr_sntnc, VTG_COGM, ",")
         str.stripchar(c, ".")
-        return int.strtobase(c, 10)
+        return int.strtobase(c, DEC)
 
 PUB CourseTrue{}: c
 ' Course over ground (true)
@@ -113,11 +116,18 @@ PUB CourseTrue{}: c
         SNTID_VTG:
             c := str.getfield(_ptr_sntnc, VTG_COGT, ",")
             str.stripchar(c, ".")
-            return int.strtobase(c, 10)
+            return int.strtobase(c, DEC)
         SNTID_RMC:
             c := str.getfield(_ptr_sntnc, RMC_COGT, ",")
             str.stripchar(c, ".")
-            return int.strtobase(c, 10)
+            return int.strtobase(c, DEC)
+
+PUB Date{}: d | tmp
+' Get current date/day of month
+    if sentenceid{} == SNTID_RMC
+        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
+        str.left(@d, tmp, 2)
+        return int.strtobase(@d, DEC)
 
 PUB EastWest{}: ew | tmp
 ' Indicates East/West of Prime Meridian
@@ -129,6 +139,13 @@ PUB EastWest{}: ew | tmp
             tmp := str.getfield(_ptr_sntnc, RMC_EW, ",")
 
     str.copy(@ew, tmp)
+
+PUB FullDate{}: d
+' Full date (day, month, year)
+'   Returns: integer (ddmmyy)
+    if sentenceid{} == SNTID_RMC
+        d := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
+        return int.strtobase(d, DEC)
 
 PUB GenChecksum{}: cksum | idx
 ' Calculate checksum of a sentence
@@ -163,7 +180,7 @@ PUB Latitude{}: lat | tmp
         SNTID_RMC:
             tmp := str.getfield(_ptr_sntnc, RMC_LAT, ",")
             str.stripchar(tmp, ".")
-    return int.strtobase(tmp, 10)
+    return int.strtobase(tmp, DEC)
 
 PUB Longitude{}: lon | tmp
 ' Extract longitude from a sentence
@@ -183,11 +200,18 @@ PUB Longitude{}: lon | tmp
         SNTID_RMC:
             tmp := str.getfield(_ptr_sntnc, RMC_LONG, ",")
             str.stripchar(tmp, ".")
-    return int.strtobase(tmp, 10)
+    return int.strtobase(tmp, DEC)
 
 PUB Minutes{}: m
 ' Return last read minutes (u8)
     return ((timeofday{} // 10_000) / 100)
+
+PUB Month{}: m | tmp
+' Get current month
+    if sentenceid{} == SNTID_RMC
+        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
+        str.mid(@m, tmp, 2, 2)
+        return int.strtobase(@m, DEC)
 
 PUB NorthSouth{}: ns | tmp
 ' Indicates North/South of equator
@@ -225,7 +249,7 @@ PUB SpeedOverGround{}: spd
     if sentenceid{} == SNTID_RMC
         spd := str.getfield(_ptr_sntnc, RMC_SOG, ",")
         str.stripchar(spd, ".")
-        return int.strtobase(spd, 10)
+        return int.strtobase(spd, DEC)
 
 PUB TalkerID{}: tid
 ' Extract Talker ID from a sentence
@@ -233,7 +257,7 @@ PUB TalkerID{}: tid
 '       2-byte talker ID (ASCII)
     return word[_ptr_sntnc][TID_ST]
 
-PUB TimeOfDay{}: tod | idx, ztime, tmp[2]
+PUB TimeOfDay{}: tod | ztime, tmp[2]
 ' Extract time of day from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
@@ -247,7 +271,14 @@ PUB TimeOfDay{}: tod | idx, ztime, tmp[2]
     ' GGA and RMC sentences both provide UTC/Zulu time in the same field
     ztime := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
     str.left(@tmp, ztime, 6)
-    return int.strtobase(@tmp, 10)              ' conv. string to long
+    return int.strtobase(@tmp, DEC)             ' conv. string to long
+
+PUB Year{}: y | tmp
+' Get current year
+    if sentenceid{} == SNTID_RMC
+        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
+        str.right(@y, tmp, 2)
+        return int.strtobase(@y, DEC)
 
 DAT
 {
