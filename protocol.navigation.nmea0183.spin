@@ -185,6 +185,14 @@ PUB SentenceID{}: sid | idx
     repeat idx from SID_ST to SID_END
         sid.byte[idx-SID_ST] := byte[_ptr_sntnc][idx]
 
+PUB SpeedOverGround{}: spd
+' Speed over ground, in hundredths of a knot
+'   (e.g., 361 == 3.61kts)
+    if sentenceid{} == SNTID_RMC
+        spd := str.getfield(_ptr_sntnc, RMC_SOG, ",")
+        str.stripchar(spd, ".")
+        return int.strtobase(spd, 10)
+
 PUB TalkerID{}: tid
 ' Extract Talker ID from a sentence
 '   Returns:
