@@ -27,16 +27,6 @@ CON
     TID_END         = 1
     SID_ST          = 2
     SID_END         = 4
-    TIME_ST         = 6
-    TIME_END        = 11
-    GGA_LATDEG_ST   = 17
-    GGA_LATDEG_END  = 20
-    GGA_LATMINP_ST  = 22
-    GGA_LATMINP_END = 25
-    GGA_LONGGDEG_ST  = 29
-    GGA_LONGGDEG_END = 33
-    GGA_LONGGMINP_ST = 35
-    GGA_LONGGMINP_END= 38
 
 ' GGA field indices
 
@@ -73,15 +63,6 @@ CON
     RMC_MODE        = 12
     RMC_CHKSUM      = 13
 
-    RMC_LATDEG_ST   = 19
-    RMC_LATDEG_END  = 21
-    RMC_LATMINP_ST  = 24
-    RMC_LATMINP_END = 27
-    RMC_LONGDEG_ST  = 31
-    RMC_LONGDEG_END = 35
-    RMC_LONGMINP_ST = 37
-    RMC_LONGMINP_END= 40
-
     CRCMARKER       = "*"
 
 OBJ
@@ -104,16 +85,16 @@ PUB Checksum{}: rd_ck | idx, tmp
 
     return int.strtobase(@tmp, 16)
 
-PUB GenChecksum{}: cks_valid | idx
+PUB GenChecksum{}: cksum | idx
 ' Calculate checksum of a sentence
 '   Returns: Calculated 8-bit checksum of sentence
-    cks_valid := idx := 0
+    cksum := idx := 0
 
     repeat
-        cks_valid ^= byte[_ptr_sntnc][idx]
-    while byte[_ptr_sntnc][++idx] <> "*"
+        cksum ^= byte[_ptr_sntnc][idx]
+    while byte[_ptr_sntnc][++idx] <> CRCMARKER
 
-    return cks_valid & $FF
+    return cksum & $FF
 
 PUB Hours{}: h
 ' Return: last read hours (u8)
