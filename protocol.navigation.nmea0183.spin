@@ -76,6 +76,27 @@ CON
     VTG_MODE        = 9
     VTG_CHKSUM      = 10
 
+' GSA field indices
+    GSA_TALKID      = 0
+    GSA_MODE1       = 1
+    GSA_MODE2       = 2
+    GSA_SATCHAN1    = 3
+    GSA_SATCHAN2    = 4
+    GSA_SATCHAN3    = 5
+    GSA_SATCHAN4    = 6
+    GSA_SATCHAN5    = 7
+    GSA_SATCHAN6    = 8
+    GSA_SATCHAN7    = 9
+    GSA_SATCHAN8    = 10
+    GSA_SATCHAN9    = 11
+    GSA_SATCHAN10   = 12
+    GSA_SATCHAN11   = 13
+    GSA_SATCHAN12   = 14
+    GSA_PDOP        = 15
+    GSA_HDOP        = 16
+    GSA_VDOP        = 17
+
+
     CRCMARKER       = "*"
 
     DEC             = 10
@@ -139,6 +160,16 @@ PUB EastWest{}: ew | tmp
             tmp := str.getfield(_ptr_sntnc, RMC_EW, ",")
 
     str.copy(@ew, tmp)
+
+PUB Fix{}: f
+' Indicates position fix
+'   Returns:
+'       1 - no fix
+'       2 - 2D fix
+'       3 - 3D fix
+    if sentenceid{} == SNTID_GSA
+        f := str.getfield(_ptr_sntnc, GSA_MODE2, ",")
+        return int.strtobase(f, DEC)
 
 PUB FullDate{}: d
 ' Full date (day, month, year)
@@ -243,11 +274,24 @@ PUB SentenceID{}: sid | idx
     repeat idx from SID_ST to SID_END
         sid.byte[idx-SID_ST] := byte[_ptr_sntnc][idx]
 
-PUB SpeedOverGround{}: spd
+PUB SpeedKnots{}: spd
 ' Speed over ground, in hundredths of a knot
 '   (e.g., 361 == 3.61kts)
-    if sentenceid{} == SNTID_RMC
-        spd := str.getfield(_ptr_sntnc, RMC_SOG, ",")
+    case sentenceid{}
+        SNTID_VTG:
+            spd := str.getfield(_ptr_sntnc, VTG_SPD_KTS, ",")
+            str.stripchar(spd, ".")
+            return int.strtobase(spd, DEC)
+        SNTID_RMC:
+            spd := str.getfield(_ptr_sntnc, RMC_SOG, ",")
+            str.stripchar(spd, ".")
+            return int.strtobase(spd, DEC)
+
+PUB SpeedKmh{}: spd
+' Speed over ground, in hundredths of a knot
+'   (e.g., 361 == 3.61kts)
+    if sentenceid{} == SNTID_VTG
+        spd := str.getfield(_ptr_sntnc, VTG_SPD_KMH, ",")
         str.stripchar(spd, ".")
         return int.strtobase(spd, DEC)
 
