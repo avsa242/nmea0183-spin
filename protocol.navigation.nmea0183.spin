@@ -6,14 +6,15 @@
         NMEA-0183 sentences
     Copyright (c) 2021
     Started Sep 7, 2019
-    Updated Mar 30, 2021
+    Updated Apr 1, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
-    SENTNC_MAX_LEN  = 81
+' Sentence max length, plus one byte for a 0/NUL string terminator
+    SENTNC_MAX_LEN  = 83
 
 ' NMEA-0183 Sentence ID types
     SNTID_VTG       = $475456
@@ -22,14 +23,13 @@ CON
     SNTID_RMC       = $434D52
     SNTID_GSV       = $565347
 
-' Datum indices (byte offsets from sentence start)
+' Talker ID, Sentence ID positions
     TID_ST          = 0
     TID_END         = 1
     SID_ST          = 2
     SID_END         = 4
 
 ' GGA field indices
-
     GGA_TALKID      = 0
     GGA_ZTIME       = 1
     GGA_LAT         = 2
@@ -97,6 +97,7 @@ CON
     GSA_VDOP        = 17
 
 
+    SENTSTART       = "$"
     CRCMARKER       = "*"
 
     DEC             = 10
@@ -304,7 +305,7 @@ PUB SpeedKnots{}: spd
             return int.strtobase(spd, DEC)
 
 PUB SpeedKmh{}: spd
-' Speed over ground, in hundredths of a knot
+' Speed over ground, in hundredths of a kmh
 '   (e.g., 361 == 3.61kts)
     if sentenceid{} == SNTID_VTG
         spd := str.getfield(_ptr_sntnc, VTG_SPD_KMH, ",")
@@ -333,13 +334,16 @@ PUB TimeOfDay{}: tod | ztime, tmp[2]
     str.left(@tmp, ztime, 6)
     return int.strtobase(@tmp, DEC)             ' conv. string to long
 
-PUB VDOP{}: v | tmp
+PUB VDOP{}: v | tmp, tmp2[4]
 ' Vertical dilution of precision
 '   Returns: DOP (hundredths)
+    bytefill(@tmp, 0, 5)
     if sentenceid{} == SNTID_GSA
         tmp := str.getfield(_ptr_sntnc, GSA_VDOP, ",")
-        str.stripchar(tmp, ".")
-        return int.strtobase(tmp, DEC)
+        bytemove(@tmp2, tmp, strsize(tmp))      ' XXX temp hack to fix mem
+        tmp2 := str.getfield(@tmp2, 0, "*")      '   corruption
+        str.stripchar(tmp2, ".")
+        return int.strtobase(tmp2, DEC)
 
 PUB Year{}: y | tmp
 ' Get current year

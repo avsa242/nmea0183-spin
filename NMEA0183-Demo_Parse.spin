@@ -7,7 +7,7 @@
         GPS module and displays the data on the terminal.
     Copyright (c) 2021
     Started Sep 8, 2019
-    Updated Mar 21, 2021
+    Updated Apr 1, 2021
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -39,92 +39,81 @@ VAR
 
     byte _sentence[nmea#SENTNC_MAX_LEN]
 
-PUB Main{} | gps_rx, idx, talk_id, sent_id, allow
+PUB Main{} | allowed
 
     setup{}
 
     nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
                                                 '   the raw sentence data is
 
-    allow := nmea#SNTID_RMC
+    ' SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV
+    allowed := nmea#SNTID_GSA
+
     repeat
         ' clear out sentence buffer
         bytefill(@_sentence, 0, nmea#SENTNC_MAX_LEN)
-        idx := 0
-        repeat until gps.charin{} == "$"        ' start of sentence
-        repeat
-            gps_rx := gps.charin{}              ' read sentence data (ASCII)
-            _sentence[idx++] := gps_rx
-        until gps_rx == ser#CR                  ' end of sentence
-        idx := 0
 
-        talk_id := nmea.talkerid{}
-        sent_id := nmea.sentenceid{}
+        repeat until gps.charin{} == nmea#SENTSTART
+        gps.strin(@_sentence)                   ' read sentence data (ASCII)
 
-        case sent_id
-            0, allow:                           ' if not the chosen sentence
-            other:                              ' type (or if 0), then skip it
-                next
-
-        ser.str(string("Sentence: "))
-        repeat                                  ' display raw sentence
-            ser.char(_sentence[idx])
-        until _sentence[++idx] == ser#CR
-        ser.clearline{}
-        ser.newline{}
-
-        case sent_id
-            nmea#SNTID_VTG:
-
-            nmea#SNTID_GGA:
-                display_gga{}
-            nmea#SNTID_GSA:
-
-            nmea#SNTID_RMC:
-                display_rmc{}
-            nmea#SNTID_GSV:
-
-            other:
-                ser.str(string("Talker ID: "))
-                ser.char(talk_id.byte[0])
-                ser.char(talk_id.byte[1])
-                ser.newline{}
-
-                ser.str(string("Sentence ID: "))
-                ser.char(sent_id.byte[0])
-                ser.char(sent_id.byte[1])
-                ser.char(sent_id.byte[2])
-                ser.char(" ")
-                ser.hex(sent_id, 6)
-
-                ser.newline{}
-
-        ser.str(string("Checksum: "))
-        ser.hex(nmea.checksum{}, 2)
-        if nmea.checksum{} == nmea.genchecksum{}
-            ser.strln(string(" (GOOD)"))
+        if nmea.sentenceid{} == allowed
+            ser.position(0, 3)
+            ' show the raw sentence
+            ser.printf1(string("Sentence: %s"), @_sentence)
+            ser.clearline{}
+            ser.newline{}
+            case nmea.sentenceid{}              ' now extract and print data
+                nmea#SNTID_VTG:                 '   pertinent to each sentence
+                    display_vtg{}
+                nmea#SNTID_GGA:
+                    display_gga{}
+                nmea#SNTID_GSA:
+                    display_gsa{}
+                nmea#SNTID_RMC:
+                    display_rmc{}
+                nmea#SNTID_GSV:
+                    display_gsv{}
         else
-            ser.str(string(" (BAD - got "))
-            ser.hex(nmea.genchecksum{}, 2)
-            ser.strln(string(")"))
-
-        ser.newline{}
+            next
 
 PUB Display_GGA{}
 
-    ser.str(string("Latitude: "))
-    ser.str(int.deczeroed(nmea.latitude{}, 8))
-    ser.str(string("    Longitude: "))
-    ser.strln(int.deczeroed(nmea.longitude{}, 9))
-    ser.newline{}
+    ser.printf4(string("Latitude: %d(%c)    Longitude: %d(%c)\n"), {
+}   nmea.latitude{}, nmea.northsouth{}, nmea.longitude{}, nmea.eastwest{})
+    ser.printf1(string("Time: %d\n"), nmea.timeofday{})
+
+PUB Display_GSA{} | fix_stat
+
+    case nmea.fix{}
+        1:
+            fix_stat := string("No fix")
+        2:
+            fix_stat := string("2D fix")
+        3:
+            fix_stat := string("3D fix")
+
+    ser.printf1(string("Position fix: %s\n"), fix_stat)
+    ser.printf1(string("HDOP: %d   \n"), nmea.hdop{})
+    ser.printf1(string("PDOP: %d   \n"), nmea.pdop{})
+    ser.printf1(string("VDOP: %d   \n"), nmea.vdop{})
+
+PUB Display_GSV{}
 
 PUB Display_RMC{}
 
-    ser.str(string("Latitude: "))
-    ser.str(int.deczeroed(nmea.latitude{}, 8))
-    ser.str(string("    Longitude: "))
-    ser.strln(int.deczeroed(nmea.longitude{}, 9))
-    ser.newline{}
+    ser.printf4(string("Latitude: %d(%c)    Longitude: %d(%c)\n"), {
+}   nmea.latitude{}, nmea.northsouth{}, nmea.longitude{}, nmea.eastwest{})
+    ser.printf1(string("Date: %d\n"), nmea.fulldate{})
+    ser.printf1(string("Time: %d\n"), nmea.timeofday{})
+    ser.printf1(string("Course (true): %d    \n"), nmea.coursetrue{})
+    ser.printf1(string("Speed: %dkts    \n"), nmea.speedknots{})
+
+PUB Display_VTG{}
+
+    ser.printf1(string("Course (true): %d    \n"), nmea.coursetrue{})
+    ser.printf1(string("Course (magnetic): %d    \n"), nmea.coursemagnetic{})
+    ser.printf1(string("Speed: %dkts    \n"), nmea.speedknots{})
+    ser.printf1(string("Speed: %dkm/h    \n"), nmea.speedkmh{})
 
 PUB Setup{}
 
