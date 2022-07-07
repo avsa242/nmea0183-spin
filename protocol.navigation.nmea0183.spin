@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Library of functions for parsing
         NMEA-0183 sentences
-    Copyright (c) 2021
+    Copyright (c) 2022
     Started Sep 7, 2019
-    Updated Apr 1, 2021
+    Updated Jul 7, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -22,6 +22,10 @@ CON
     SNTID_GSA       = $415347
     SNTID_RMC       = $434D52
     SNTID_GSV       = $565347
+
+    { AIS }
+    SNTID_VDM       = $4D4456
+    SNTID_VDO       = $4F4456
 
 ' Talker ID, Sentence ID positions
     TID_ST          = 0
@@ -105,8 +109,7 @@ CON
 
 OBJ
 
-    int : "string.integer"
-    str : "string"
+    str : "string.new"
 
 VAR
 
@@ -121,7 +124,7 @@ PUB Checksum{}: rd_ck | idx, tmp
     tmp.byte[1] := byte[_ptr_sntnc][++idx]
     tmp.word[1] := 0
 
-    return int.strtobase(@tmp, HEX)
+    return str.atoib(@tmp, str#IHEX)
 
 PUB CourseMagnetic{}: c
 ' Course over ground (magnetic)
@@ -129,7 +132,7 @@ PUB CourseMagnetic{}: c
     if sentenceid{} == SNTID_VTG
         c := str.getfield(_ptr_sntnc, VTG_COGM, ",")
         str.stripchar(c, ".")
-        return int.strtobase(c, DEC)
+        return str.atoi(c)
 
 PUB CourseTrue{}: c
 ' Course over ground (true)
@@ -138,18 +141,17 @@ PUB CourseTrue{}: c
         SNTID_VTG:
             c := str.getfield(_ptr_sntnc, VTG_COGT, ",")
             str.stripchar(c, ".")
-            return int.strtobase(c, DEC)
+            return str.atoi(c)
         SNTID_RMC:
             c := str.getfield(_ptr_sntnc, RMC_COGT, ",")
             str.stripchar(c, ".")
-            return int.strtobase(c, DEC)
+            return str.atoi(c)
 
 PUB Date{}: d | tmp
 ' Get current date/day of month
     if sentenceid{} == SNTID_RMC
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        str.left(@d, tmp, 2)
-        return int.strtobase(@d, DEC)
+        return str.atoi(str.left(tmp, 2))
 
 PUB EastWest{}: ew | tmp
 ' Indicates East/West of Prime Meridian
@@ -169,15 +171,13 @@ PUB Fix{}: f
 '       2 - 2D fix
 '       3 - 3D fix
     if sentenceid{} == SNTID_GSA
-        f := str.getfield(_ptr_sntnc, GSA_MODE2, ",")
-        return int.strtobase(f, DEC)
+        return str.atoi(str.getfield(_ptr_sntnc, GSA_MODE2, ","))
 
 PUB FullDate{}: d
 ' Full date (day, month, year)
 '   Returns: integer (ddmmyy)
     if sentenceid{} == SNTID_RMC
-        d := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        return int.strtobase(d, DEC)
+        return str.atoi(str.getfield(_ptr_sntnc, RMC_ZDATE, ","))
 
 PUB GenChecksum{}: cksum | idx
 ' Calculate checksum of a sentence
@@ -196,7 +196,7 @@ PUB HDOP{}: h | tmp
     if sentenceid{} == SNTID_GSA
         tmp := str.getfield(_ptr_sntnc, GSA_HDOP, ",")
         str.stripchar(tmp, ".")
-        return int.strtobase(tmp, DEC)
+        return str.atoi(tmp)
 
 PUB Hours{}: h
 ' Return: last read hours (u8)
@@ -220,7 +220,7 @@ PUB Latitude{}: lat | tmp
         SNTID_RMC:
             tmp := str.getfield(_ptr_sntnc, RMC_LAT, ",")
             str.stripchar(tmp, ".")
-    return int.strtobase(tmp, DEC)
+    return str.atoi(tmp)
 
 PUB Longitude{}: lon | tmp
 ' Extract longitude from a sentence
@@ -240,7 +240,7 @@ PUB Longitude{}: lon | tmp
         SNTID_RMC:
             tmp := str.getfield(_ptr_sntnc, RMC_LONG, ",")
             str.stripchar(tmp, ".")
-    return int.strtobase(tmp, DEC)
+    return str.atoi(tmp)
 
 PUB Minutes{}: m
 ' Return last read minutes (u8)
@@ -250,8 +250,7 @@ PUB Month{}: m | tmp
 ' Get current month
     if sentenceid{} == SNTID_RMC
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        str.mid(@m, tmp, 2, 2)
-        return int.strtobase(@m, DEC)
+        return str.atoi(str.mid(tmp, 2, 2))
 
 PUB NorthSouth{}: ns | tmp
 ' Indicates North/South of equator
@@ -269,7 +268,7 @@ PUB PDOP{}: p | tmp
     if sentenceid{} == SNTID_GSA
         tmp := str.getfield(_ptr_sntnc, GSA_PDOP, ",")
         str.stripchar(tmp, ".")
-        return int.strtobase(tmp, DEC)
+        return str.atoi(tmp)
 
 PUB Seconds{}: s
 ' Return last read seconds (u8)
@@ -298,11 +297,11 @@ PUB SpeedKnots{}: spd
         SNTID_VTG:
             spd := str.getfield(_ptr_sntnc, VTG_SPD_KTS, ",")
             str.stripchar(spd, ".")
-            return int.strtobase(spd, DEC)
+            return str.atoi(spd)
         SNTID_RMC:
             spd := str.getfield(_ptr_sntnc, RMC_SOG, ",")
             str.stripchar(spd, ".")
-            return int.strtobase(spd, DEC)
+            return str.atoi(spd)
 
 PUB SpeedKmh{}: spd
 ' Speed over ground, in hundredths of a kmh
@@ -310,7 +309,7 @@ PUB SpeedKmh{}: spd
     if sentenceid{} == SNTID_VTG
         spd := str.getfield(_ptr_sntnc, VTG_SPD_KMH, ",")
         str.stripchar(spd, ".")
-        return int.strtobase(spd, DEC)
+        return str.atoi(spd)
 
 PUB TalkerID{}: tid
 ' Extract Talker ID from a sentence
@@ -318,7 +317,7 @@ PUB TalkerID{}: tid
 '       2-byte talker ID (ASCII)
     return word[_ptr_sntnc][TID_ST]
 
-PUB TimeOfDay{}: tod | ztime, tmp[2]
+PUB TimeOfDay{}: tod | tmp
 ' Extract time of day from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
@@ -330,9 +329,8 @@ PUB TimeOfDay{}: tod | ztime, tmp[2]
 '       -----------------------
 '       23h, 16m, 50s (23:16:50)
     ' GGA and RMC sentences both provide UTC/Zulu time in the same field
-    ztime := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
-    str.left(@tmp, ztime, 6)
-    return int.strtobase(@tmp, DEC)             ' conv. string to long
+    tmp := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
+    return str.atoi(tmp)
 
 PUB VDOP{}: v | tmp, tmp2[4]
 ' Vertical dilution of precision
@@ -343,33 +341,34 @@ PUB VDOP{}: v | tmp, tmp2[4]
         bytemove(@tmp2, tmp, strsize(tmp))      ' XXX temp hack to fix mem
         tmp2 := str.getfield(@tmp2, 0, "*")      '   corruption
         str.stripchar(tmp2, ".")
-        return int.strtobase(tmp2, DEC)
+        return str.atoi(tmp2)
 
 PUB Year{}: y | tmp
 ' Get current year
     if sentenceid{} == SNTID_RMC
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        str.right(@y, tmp, 2)
-        return int.strtobase(@y, DEC)
+        return str.atoi(str.right(tmp, 2))
 
 DAT
 {
-    --------------------------------------------------------------------------------------------------------
-    TERMS OF USE: MIT License
+TERMS OF USE: MIT License
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-    associated documentation files (the "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
-    following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all copies or substantial
-    portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-    LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-    --------------------------------------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 }
+
