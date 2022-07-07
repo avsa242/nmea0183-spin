@@ -102,9 +102,11 @@ PUB Display_RMC{}
 
     disppos{}
     ser.printf3(string("Date: %02.2d/%02.2d/%02.2d\n\r"), nmea.month{}, nmea.date{}, nmea.year{})
-    ser.printf1(string("Time: %d\n\r"), nmea.timeofday{})
-    ser.printf1(string("Course (true): %d    \n\r"), nmea.coursetrue{})
-    ser.printf1(string("Speed: %dkts    \n\r"), nmea.speedknots{})
+    ser.printf3(string("Time: %02.2d:%02.2d:%02.2d\n\r"), nmea.hours{}, nmea.minutes{}, nmea.seconds{})
+    ser.printf2(string("Course (true): %03.3d.%02.2d\n\r"), (nmea.coursetrue{} / 100), {
+}   (nmea.coursetrue{} // 100))
+    ser.printf2(string("Speed: %d.%02.2dkts\n\r"), (nmea.speedknots{} / 100), {
+}   (nmea.speedknots // 100))
 
 PUB Display_VTG{}
 
