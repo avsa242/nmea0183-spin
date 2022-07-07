@@ -101,7 +101,7 @@ PUB Display_GSV{}
 PUB Display_RMC{}
 
     disppos{}
-    ser.printf1(string("Date: %d\n\r"), nmea.fulldate{})
+    ser.printf3(string("Date: %02.2d/%02.2d/%02.2d\n\r"), nmea.month{}, nmea.date{}, nmea.year{})
     ser.printf1(string("Time: %d\n\r"), nmea.timeofday{})
     ser.printf1(string("Course (true): %d    \n\r"), nmea.coursetrue{})
     ser.printf1(string("Speed: %dkts    \n\r"), nmea.speedknots{})

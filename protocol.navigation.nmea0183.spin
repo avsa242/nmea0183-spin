@@ -149,9 +149,7 @@ PUB CourseTrue{}: c
 
 PUB Date{}: d | tmp
 ' Get current date/day of month
-    if (sentenceid{} == SNTID_RMC)
-        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        return str.atoi(str.left(tmp, 2))
+    return ((fulldate{} // 10_000) / 100)
 
 PUB EastWest{}: ew | tmp
 ' Indicates East/West of Prime Meridian
@@ -280,9 +278,7 @@ PUB Minutes{}: m
 
 PUB Month{}: m | tmp
 ' Get current month
-    if (sentenceid{} == SNTID_RMC)
-        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        return str.atoi(str.mid(tmp, 2, 2))
+    return (fulldate{} / 10_000)
 
 PUB NorthSouth{}: ns | tmp
 ' Indicates North/South of equator
@@ -377,9 +373,7 @@ PUB VDOP{}: v | tmp, tmp2[4]
 
 PUB Year{}: y | tmp
 ' Get current year
-    if (sentenceid{} == SNTID_RMC)
-        tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
-        return str.atoi(str.right(tmp, 2))
+    return (fulldate{} // 100)
 
 DAT
 {
