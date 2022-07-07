@@ -222,6 +222,22 @@ PUB Latitude{}: lat | tmp
             str.stripchar(tmp, ".")
     return str.atoi(tmp)
 
+PUB LatDeg{}: d
+' Extract degrees from latitude
+    return (latitude{} / 1_000_000)
+
+PUB LatMinutes{}: m
+' Extract minutes (whole and part) from latitude
+    return (latitude{} // 1_000_000)
+
+PUB LatMinPart{}: m
+' Extract minutes (part) from latitude
+    return (latminutes{} // 10_000)
+
+PUB LatMinWhole{}: m
+' Extract minutes (whole) from latitude
+    return (latminutes{} / 10_000)
+
 PUB Longitude{}: lon | tmp
 ' Extract longitude from a sentence
 '   Returns: Longitude in degrees and minutes packed into long
@@ -241,6 +257,22 @@ PUB Longitude{}: lon | tmp
             tmp := str.getfield(_ptr_sntnc, RMC_LONG, ",")
             str.stripchar(tmp, ".")
     return str.atoi(tmp)
+
+PUB LongDeg{}: d
+' Extract degrees from longitude
+    return (longitude{} / 1_000_000)
+
+PUB LongMinutes{}: m
+' Extract minutes (whole and part) from longitude
+    return (longitude{} // 1_000_000)
+
+PUB LongMinPart{}: m
+' Extract minutes (part) from longitude
+    return (longminutes{} // 10_000)
+
+PUB LongMinWhole{}: m
+' Extract minutes (whole) from longitude
+    return (longminutes{} / 10_000)
 
 PUB Minutes{}: m
 ' Return last read minutes (u8)

@@ -21,8 +21,8 @@ CON
     LED         = cfg#LED1
     SER_BAUD    = 115_200
 
-    GPS_TXD     = 18
-    GPS_RXD     = 17
+    GPS_TXD     = 1
+    GPS_RXD     = 2
     GPS_BAUD    = 9600
 ' --
 
@@ -46,7 +46,7 @@ PUB Main{} | allowed
                                                 '   the raw sentence data is
 
     ' SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV
-    allowed := nmea#SNTID_GSA
+    allowed := nmea#SNTID_RMC
 
     repeat
         ' clear out sentence buffer
@@ -77,8 +77,7 @@ PUB Main{} | allowed
 
 PUB Display_GGA{}
 
-    ser.printf4(string("Latitude: %d(%c)    Longitude: %d(%c)\n\r"), {
-}   nmea.latitude{}, nmea.northsouth{}, nmea.longitude{}, nmea.eastwest{})
+    disppos{}
     ser.printf1(string("Time: %d\n\r"), nmea.timeofday{})
 
 PUB Display_GSA{} | fix_stat
@@ -100,8 +99,7 @@ PUB Display_GSV{}
 
 PUB Display_RMC{}
 
-    ser.printf4(string("Latitude: %d(%c)    Longitude: %d(%c)\n\r"), {
-}   nmea.latitude{}, nmea.northsouth{}, nmea.longitude{}, nmea.eastwest{})
+    disppos{}
     ser.printf1(string("Date: %d\n\r"), nmea.fulldate{})
     ser.printf1(string("Time: %d\n\r"), nmea.timeofday{})
     ser.printf1(string("Course (true): %d    \n\r"), nmea.coursetrue{})
@@ -113,6 +111,13 @@ PUB Display_VTG{}
     ser.printf1(string("Course (magnetic): %d    \n\r"), nmea.coursemagnetic{})
     ser.printf1(string("Speed: %dkts    \n\r"), nmea.speedknots{})
     ser.printf1(string("Speed: %dkm/h    \n\r"), nmea.speedkmh{})
+
+PRI DispPos{}
+' Display position
+    ser.printf4(string("Latitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r"), {
+}   nmea.latdeg{}, nmea.latminwhole{}, nmea.latminpart{}, nmea.northsouth{})
+    ser.printf4(string("Longitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r"), {
+}   nmea.longdeg{}, nmea.longminwhole{}, nmea.longminpart{}, nmea.eastwest{})
 
 PUB Setup{}
 
