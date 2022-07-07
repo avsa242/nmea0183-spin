@@ -1,0 +1,161 @@
+{
+    --------------------------------------------
+    Filename: NMEA0183-Demo_Parse.spin2
+    Author: Jesse Burt
+    Description: Simple demo that uses the NMEA0183 object
+        to parse sentences read from a compatible serial-connected
+        GPS module and displays the data on the terminal. (P2 version)
+    Copyright (c) 2022
+    Started Jul 7, 2022
+    Updated Jul 7, 2022
+    See end of file for terms of use.
+    --------------------------------------------
+}
+#include "core.con.click.spin2"
+
+CON
+
+    _clkfreq    = cfg._clkfreq_def
+    _xtlfreq    = cfg._xtlfreq
+
+' -- User-modifiable constants
+    LED         = cfg.LED1
+    SER_BAUD    = 2_000_000
+
+    CLICK_BASE  = 16
+
+    { uncomment these two lines, and comment out the #include above, to use custom I/O pins }
+'    GPS_TXD     = 1
+'    GPS_RXD     = 2
+
+    GPS_BAUD    = 9600
+' --
+
+OBJ
+
+    cfg     : "core.con.boardcfg.p2eval"
+    ser     : "com.serial.terminal.ansi"
+    gps     : "com.serial.terminal"
+    time    : "time"
+    nmea    : "protocol.navigation.nmea0183"
+
+VAR
+
+    byte _sentence[nmea.SENTNC_MAX_LEN]
+
+PUB Main() | allowed
+
+    setup()
+
+    nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
+                                                '   the raw sentence data is
+
+    { sentence type to display:
+        SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV }
+    allowed := nmea.SNTID_RMC
+
+    repeat
+        ' clear out sentence buffer
+        bytefill(@_sentence, 0, nmea.SENTNC_MAX_LEN)
+
+        repeat until (gps.charin() == nmea.SENTSTART)
+        gps.strin(@_sentence)                   ' read sentence data (ASCII)
+
+        if (nmea.sentenceid() == allowed)
+            ser.position(0, 3)
+            ' show the raw sentence
+            ser.printf(@"Sentence: %s", @_sentence)
+            ser.clearline()
+            ser.newline()
+            case nmea.sentenceid()              ' now extract and print data
+                nmea.SNTID_VTG:                 '   pertinent to each sentence
+                    display_vtg()
+                nmea.SNTID_GGA:
+                    display_gga()
+                nmea.SNTID_GSA:
+                    display_gsa()
+                nmea.SNTID_RMC:
+                    display_rmc()
+                nmea.SNTID_GSV:
+                    display_gsv()
+        else
+            next
+
+PUB Display_GGA()
+
+    disppos()
+    ser.printf(@"Time: %d\n\r", nmea.timeofday())
+
+PUB Display_GSA() | fix_stat
+
+    case nmea.fix()
+        1:
+            fix_stat := @"No fix"
+        2:
+            fix_stat := @"2D fix"
+        3:
+            fix_stat := @"3D fix"
+
+    ser.printf(@"Position fix: %s\n\r", fix_stat)
+    ser.printf(@"HDOP: %d   \n\r", nmea.hdop())
+    ser.printf(@"PDOP: %d   \n\r", nmea.pdop())
+    ser.printf(@"VDOP: %d   \n\r", nmea.vdop())
+
+PUB Display_GSV()
+
+PUB Display_RMC()
+
+    disppos()
+    ser.printf(@"Date: %02.2d/%02.2d/%02.2d\n\r", nmea.month(), nmea.date(), nmea.year())
+    ser.printf(@"Time: %02.2d:%02.2d:%02.2d\n\r", nmea.hours(), nmea.minutes(), nmea.seconds())
+    ser.printf(@"Course (true): %03.3d.%02.2d\n\r", (nmea.coursetrue() / 100), {
+}   (nmea.coursetrue() // 100))
+    ser.printf(@"Speed: %d.%02.2dkts\n\r", (nmea.speedknots() / 100), {
+}   (nmea.speedknots // 100))
+
+PUB Display_VTG()
+
+    ser.printf(@"Course (true): %d    \n\r", nmea.coursetrue())
+    ser.printf(@"Course (magnetic): %d    \n\r", nmea.coursemagnetic())
+    ser.printf(@"Speed: %dkts    \n\r", nmea.speedknots())
+    ser.printf(@"Speed: %dkm/h    \n\r", nmea.speedkmh())
+
+PRI DispPos()
+' Display position
+    ser.printf(@"Latitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r", {
+}   nmea.latdeg(), nmea.latminwhole(), nmea.latminpart(), nmea.northsouth())
+    ser.printf(@"Longitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r", {
+}   nmea.longdeg(), nmea.longminwhole(), nmea.longminpart(), nmea.eastwest())
+
+PUB Setup()
+
+    ser.start(SER_BAUD)
+    waitms(30)
+    ser.clear()
+    ser.strln(@"Serial terminal started")
+    gps.startrxtx(GPS_TXD, GPS_RXD, %0000, GPS_BAUD)
+    ser.strln(@"GPS serial started")
+
+DAT
+{
+TERMS OF USE: MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+}
+
