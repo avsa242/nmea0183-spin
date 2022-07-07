@@ -129,7 +129,7 @@ PUB Setup{}
     ser.clear{}
     ser.strln(string("Serial terminal started"))
     gps.startrxtx(GPS_TXD, GPS_RXD, %0000, GPS_BAUD)
-    gps.strln(string("GPS serial started"))
+    ser.strln(string("GPS serial started"))
 
 DAT
 {
