@@ -102,6 +102,7 @@ CON
 
 
     SENTSTART       = "$"
+    AIS_START       = "!"
     CRCMARKER       = "*"
 
     DEC             = 10
@@ -114,6 +115,30 @@ OBJ
 VAR
 
     long _ptr_sntnc
+
+PUB AIS_Channel{}: c
+' AIS channel
+    bytemove(@c, str.getfield(_ptr_sntnc, 4, ","), 1)
+
+PUB AIS_FillBits{}: f
+' Number of message fill bits
+    return str.atoi(str.getfield(_ptr_sntnc, 6, ","))
+
+PUB AIS_Message{}: m
+' Encapsulated message (ITU-R M.1371)
+    return str.getfield(_ptr_sntnc, 5, ",")
+
+PUB AIS_MsgLen{}: c
+' Total number of AIS sentences needed to transfer the message
+    return str.atoi(str.getfield(_ptr_sntnc, 1, ","))
+
+PUB AIS_SeqMsgID{}: s
+' AIS sequential message identifier (0..9)
+    return str.getfield(_ptr_sntnc, 3, ",")
+
+PUB AIS_SntNumb{}: s
+' AIS sentence number (1..9)
+    return str.atoi(str.getfield(_ptr_sntnc, 2, ","))
 
 PUB Checksum{}: rd_ck | idx, tmp
 ' Extract Checksum from a sentence
