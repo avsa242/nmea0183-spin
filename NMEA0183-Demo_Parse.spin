@@ -45,17 +45,18 @@ PUB Main{} | allowed
     nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
                                                 '   the raw sentence data is
 
-    ' SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV
+    { sentence type to display:
+        SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV }
     allowed := nmea#SNTID_RMC
 
     repeat
         ' clear out sentence buffer
         bytefill(@_sentence, 0, nmea#SENTNC_MAX_LEN)
 
-        repeat until gps.charin{} == nmea#SENTSTART
+        repeat until (gps.charin{} == nmea#SENTSTART)
         gps.strin(@_sentence)                   ' read sentence data (ASCII)
 
-        if nmea.sentenceid{} == allowed
+        if (nmea.sentenceid{} == allowed)
             ser.position(0, 3)
             ' show the raw sentence
             ser.printf1(string("Sentence: %s"), @_sentence)

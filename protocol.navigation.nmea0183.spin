@@ -129,7 +129,7 @@ PUB Checksum{}: rd_ck | idx, tmp
 PUB CourseMagnetic{}: c
 ' Course over ground (magnetic)
 '   Returns: hundredths of a degree
-    if sentenceid{} == SNTID_VTG
+    if (sentenceid{} == SNTID_VTG)
         c := str.getfield(_ptr_sntnc, VTG_COGM, ",")
         str.stripchar(c, ".")
         return str.atoi(c)
@@ -149,7 +149,7 @@ PUB CourseTrue{}: c
 
 PUB Date{}: d | tmp
 ' Get current date/day of month
-    if sentenceid{} == SNTID_RMC
+    if (sentenceid{} == SNTID_RMC)
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
         return str.atoi(str.left(tmp, 2))
 
@@ -170,13 +170,13 @@ PUB Fix{}: f
 '       1 - no fix
 '       2 - 2D fix
 '       3 - 3D fix
-    if sentenceid{} == SNTID_GSA
+    if (sentenceid{} == SNTID_GSA)
         return str.atoi(str.getfield(_ptr_sntnc, GSA_MODE2, ","))
 
 PUB FullDate{}: d
 ' Full date (day, month, year)
 '   Returns: integer (ddmmyy)
-    if sentenceid{} == SNTID_RMC
+    if (sentenceid{} == SNTID_RMC)
         return str.atoi(str.getfield(_ptr_sntnc, RMC_ZDATE, ","))
 
 PUB GenChecksum{}: cksum | idx
@@ -188,12 +188,12 @@ PUB GenChecksum{}: cksum | idx
         cksum ^= byte[_ptr_sntnc][idx]
     while byte[_ptr_sntnc][++idx] <> CRCMARKER
 
-    return cksum & $FF
+    return (cksum & $FF)
 
 PUB HDOP{}: h | tmp
 ' Horizontal dilution of precision
 '   Returns: DOP (hundredths)
-    if sentenceid{} == SNTID_GSA
+    if (sentenceid{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_HDOP, ",")
         str.stripchar(tmp, ".")
         return str.atoi(tmp)
@@ -280,7 +280,7 @@ PUB Minutes{}: m
 
 PUB Month{}: m | tmp
 ' Get current month
-    if sentenceid{} == SNTID_RMC
+    if (sentenceid{} == SNTID_RMC)
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
         return str.atoi(str.mid(tmp, 2, 2))
 
@@ -297,7 +297,7 @@ PUB NorthSouth{}: ns | tmp
 PUB PDOP{}: p | tmp
 ' Position dilution of precision
 '   Returns: DOP (hundredths)
-    if sentenceid{} == SNTID_GSA
+    if (sentenceid{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_PDOP, ",")
         str.stripchar(tmp, ".")
         return str.atoi(tmp)
@@ -338,7 +338,7 @@ PUB SpeedKnots{}: spd
 PUB SpeedKmh{}: spd
 ' Speed over ground, in hundredths of a kmh
 '   (e.g., 361 == 3.61kts)
-    if sentenceid{} == SNTID_VTG
+    if (sentenceid{} == SNTID_VTG)
         spd := str.getfield(_ptr_sntnc, VTG_SPD_KMH, ",")
         str.stripchar(spd, ".")
         return str.atoi(spd)
@@ -368,7 +368,7 @@ PUB VDOP{}: v | tmp, tmp2[4]
 ' Vertical dilution of precision
 '   Returns: DOP (hundredths)
     bytefill(@tmp, 0, 5)
-    if sentenceid{} == SNTID_GSA
+    if (sentenceid{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_VDOP, ",")
         bytemove(@tmp2, tmp, strsize(tmp))      ' XXX temp hack to fix mem
         tmp2 := str.getfield(@tmp2, 0, "*")      '   corruption
@@ -377,7 +377,7 @@ PUB VDOP{}: v | tmp, tmp2[4]
 
 PUB Year{}: y | tmp
 ' Get current year
-    if sentenceid{} == SNTID_RMC
+    if (sentenceid{} == SNTID_RMC)
         tmp := str.getfield(_ptr_sntnc, RMC_ZDATE, ",")
         return str.atoi(str.right(tmp, 2))
 
