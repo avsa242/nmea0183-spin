@@ -6,7 +6,7 @@
         NMEA-0183 sentences
     Copyright (c) 2022
     Started Sep 7, 2019
-    Updated Jul 7, 2022
+    Updated Aug 18, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -110,7 +110,7 @@ CON
 
 OBJ
 
-    str : "string.new"
+    str : "string"
 
 VAR
 
