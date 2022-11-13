@@ -6,7 +6,7 @@
         to parse AIS sentences.
     Copyright (c) 2022
     Started Jul 7, 2022
-    Updated Jul 7, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -34,32 +34,31 @@ DAT
 
     byte ser#CR, ser#LF, 0
 
-PUB Main{}
+PUB main{}
 
     setup{}
 
-    nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
-                                                '   the raw sentence data is
+    nmea.ptr_sentence(@_sentence)               ' tell NMEA0183 object where the sentence data is
 
     if (byte[@_sentence][0] := nmea#AIS_START)
-        ser.position(0, 3)
+        ser.pos_xy(0, 3)
         ' show the raw sentence
         ser.printf1(string("Sentence: %s"), @_sentence)
-        ser.clearline{}
+        ser.clear_line{}
         ser.newline{}
         display_vdm{}
     repeat
 
-PUB Display_VDM{}
+PUB display_vdm{}
 
-    ser.printf1(@"Total sentences in message: %d\n\r", nmea.ais_msglen{})
-    ser.printf1(@"Sentence number: %d\n\r", nmea.ais_sntnumb{})
-    ser.printf1(@"Sequential message ID: %s\n\r", nmea.ais_seqmsgid{})
+    ser.printf1(@"Total sentences in message: %d\n\r", nmea.ais_msg_len{})
+    ser.printf1(@"Sentence number: %d\n\r", nmea.ais_sentence_nr{})
+    ser.printf1(@"Sequential message ID: %s\n\r", nmea.ais_seq_msg_id{})
     ser.printf1(@"AIS channel: %c\n\r", nmea.ais_channel{})
     ser.printf1(@"AIS message: %s\n\r", nmea.ais_message{})
     ser.printf1(@"AIS message fill bits: %d\n\r", nmea.ais_fillbits{})
 
-PUB Setup{}
+PUB setup{}
 
     ser.start(SER_BAUD)
     time.msleep(30)

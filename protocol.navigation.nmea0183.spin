@@ -6,7 +6,7 @@
         NMEA-0183 sentences
     Copyright (c) 2022
     Started Sep 7, 2019
-    Updated Aug 18, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -116,31 +116,31 @@ VAR
 
     long _ptr_sntnc
 
-PUB AIS_Channel{}: c
+PUB ais_channel{}: c
 ' AIS channel
     bytemove(@c, str.getfield(_ptr_sntnc, 4, ","), 1)
 
-PUB AIS_FillBits{}: f
+PUB ais_fillbits{}: f
 ' Number of message fill bits
     return str.atoi(str.getfield(_ptr_sntnc, 6, ","))
 
-PUB AIS_Message{}: m
+PUB ais_message{}: m
 ' Encapsulated message (ITU-R M.1371)
     return str.getfield(_ptr_sntnc, 5, ",")
 
-PUB AIS_MsgLen{}: c
+PUB ais_msg_len{}: c
 ' Total number of AIS sentences needed to transfer the message
     return str.atoi(str.getfield(_ptr_sntnc, 1, ","))
 
-PUB AIS_SeqMsgID{}: s
+PUB ais_seq_msg_id{}: s
 ' AIS sequential message identifier (0..9)
     return str.getfield(_ptr_sntnc, 3, ",")
 
-PUB AIS_SntNumb{}: s
+PUB ais_sentence_nr{}: s
 ' AIS sentence number (1..9)
     return str.atoi(str.getfield(_ptr_sntnc, 2, ","))
 
-PUB Checksum{}: rd_ck | idx, tmp
+PUB checksum{}: rd_ck | idx, tmp
 ' Extract Checksum from a sentence
 '   Returns: Checksum contained in sentence at _ptr_sntnc
     idx := 0
@@ -151,18 +151,18 @@ PUB Checksum{}: rd_ck | idx, tmp
 
     return str.atoib(@tmp, str#IHEX)
 
-PUB CourseMagnetic{}: c
+PUB course_magnetic{}: c
 ' Course over ground (magnetic)
 '   Returns: hundredths of a degree
-    if (sentenceid{} == SNTID_VTG)
+    if (sentence_id{} == SNTID_VTG)
         c := str.getfield(_ptr_sntnc, VTG_COGM, ",")
         str.stripchar(c, ".")
         return str.atoi(c)
 
-PUB CourseTrue{}: c
+PUB course_true{}: c
 ' Course over ground (true)
 '   Returns: hundredths of a degree
-    case sentenceid{}
+    case sentence_id{}
         SNTID_VTG:
             c := str.getfield(_ptr_sntnc, VTG_COGT, ",")
             str.stripchar(c, ".")
@@ -172,14 +172,14 @@ PUB CourseTrue{}: c
             str.stripchar(c, ".")
             return str.atoi(c)
 
-PUB Date{}: d | tmp
+PUB date{}: d | tmp
 ' Get current date/day of month
-    return ((fulldate{} // 10_000) / 100)
+    return ((full_date{} // 10_000) / 100)
 
-PUB EastWest{}: ew | tmp
+PUB east_west{}: ew | tmp
 ' Indicates East/West of Prime Meridian
 '   Returns: E or W (ASCII)
-    case sentenceid{}
+    case sentence_id{}
         SNTID_GGA:
             tmp := str.getfield(_ptr_sntnc, GGA_EW, ",")
         SNTID_RMC:
@@ -187,22 +187,22 @@ PUB EastWest{}: ew | tmp
 
     str.copy(@ew, tmp)
 
-PUB Fix{}: f
+PUB fix{}: f
 ' Indicates position fix
 '   Returns:
 '       1 - no fix
 '       2 - 2D fix
 '       3 - 3D fix
-    if (sentenceid{} == SNTID_GSA)
+    if (sentence_id{} == SNTID_GSA)
         return str.atoi(str.getfield(_ptr_sntnc, GSA_MODE2, ","))
 
-PUB FullDate{}: d
+PUB full_date{}: d
 ' Full date (day, month, year)
 '   Returns: integer (ddmmyy)
-    if (sentenceid{} == SNTID_RMC)
+    if (sentence_id{} == SNTID_RMC)
         return str.atoi(str.getfield(_ptr_sntnc, RMC_ZDATE, ","))
 
-PUB GenChecksum{}: cksum | idx
+PUB gen_checksum{}: cksum | idx
 ' Calculate checksum of a sentence
 '   Returns: Calculated 8-bit checksum of sentence
     cksum := idx := 0
@@ -213,19 +213,19 @@ PUB GenChecksum{}: cksum | idx
 
     return (cksum & $FF)
 
-PUB HDOP{}: h | tmp
+PUB hdop{}: h | tmp
 ' Horizontal dilution of precision
 '   Returns: DOP (hundredths)
-    if (sentenceid{} == SNTID_GSA)
+    if (sentence_id{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_HDOP, ",")
         str.stripchar(tmp, ".")
         return str.atoi(tmp)
 
-PUB Hours{}: h
+PUB hours{}: h
 ' Return: last read hours (u8)
-    return (timeofday{} / 10_000)
+    return (time_of_day{} / 10_000)
 
-PUB Latitude{}: lat | tmp
+PUB latitude{}: lat | tmp
 ' Extract latitude from a sentence
 '   Returns: Latitude in degrees and minutes packed into long
 '   Example:
@@ -236,7 +236,7 @@ PUB Latitude{}: lat | tmp
 '        Degrees
 '       -----------------------
 '       40 deg, 05.6475 minutes
-    case sentenceid
+    case sentence_id
         SNTID_GGA:
             tmp := str.getfield(_ptr_sntnc, GGA_LAT, ",")
             str.stripchar(tmp, ".")
@@ -245,23 +245,23 @@ PUB Latitude{}: lat | tmp
             str.stripchar(tmp, ".")
     return str.atoi(tmp)
 
-PUB LatDeg{}: d
+PUB lat_deg{}: d
 ' Extract degrees from latitude
     return (latitude{} / 1_000_000)
 
-PUB LatMinutes{}: m
+PUB lat_minutes{}: m
 ' Extract minutes (whole and part) from latitude
     return (latitude{} // 1_000_000)
 
-PUB LatMinPart{}: m
+PUB lat_minutes_part{}: m
 ' Extract minutes (part) from latitude
-    return (latminutes{} // 10_000)
+    return (lat_minutes{} // 10_000)
 
-PUB LatMinWhole{}: m
+PUB lat_minutes_whole{}: m
 ' Extract minutes (whole) from latitude
-    return (latminutes{} / 10_000)
+    return (lat_minutes{} / 10_000)
 
-PUB Longitude{}: lon | tmp
+PUB longitude{}: lon | tmp
 ' Extract longitude from a sentence
 '   Returns: Longitude in degrees and minutes packed into long
 '   Example:
@@ -272,7 +272,7 @@ PUB Longitude{}: lon | tmp
 '         Degrees
 '       -----------------------
 '       074 deg, 11.4014 minutes
-    case sentenceid
+    case sentence_id
         SNTID_GGA:
             tmp := str.getfield(_ptr_sntnc, GGA_LONG, ",")
             str.stripchar(tmp, ".")
@@ -281,53 +281,49 @@ PUB Longitude{}: lon | tmp
             str.stripchar(tmp, ".")
     return str.atoi(tmp)
 
-PUB LongDeg{}: d
+PUB long_deg{}: d
 ' Extract degrees from longitude
     return (longitude{} / 1_000_000)
 
-PUB LongMinutes{}: m
+PUB long_minutes{}: m
 ' Extract minutes (whole and part) from longitude
     return (longitude{} // 1_000_000)
 
-PUB LongMinPart{}: m
+PUB long_minutes_part{}: m
 ' Extract minutes (part) from longitude
-    return (longminutes{} // 10_000)
+    return (long_minutes{} // 10_000)
 
-PUB LongMinWhole{}: m
+PUB long_minutes_whole{}: m
 ' Extract minutes (whole) from longitude
-    return (longminutes{} / 10_000)
+    return (long_minutes{} / 10_000)
 
-PUB Minutes{}: m
+PUB minutes{}: m
 ' Return last read minutes (u8)
-    return ((timeofday{} // 10_000) / 100)
+    return ((time_of_day{} // 10_000) / 100)
 
-PUB Month{}: m | tmp
+PUB month{}: m | tmp
 ' Get current month
-    return (fulldate{} / 10_000)
+    return (full_date{} / 10_000)
 
-PUB NorthSouth{}: ns | tmp
+PUB north_south{}: ns | tmp
 ' Indicates North/South of equator
 '   Returns: N/S (ASCII)
-    case sentenceid{}
+    case sentence_id{}
         SNTID_GGA:
             tmp := str.getfield(_ptr_sntnc, GGA_NS, ",")
         SNTID_RMC:
             tmp := str.getfield(_ptr_sntnc, RMC_NS, ",")
     str.copy(@ns, tmp)
 
-PUB PDOP{}: p | tmp
+PUB pdop{}: p | tmp
 ' Position dilution of precision
 '   Returns: DOP (hundredths)
-    if (sentenceid{} == SNTID_GSA)
+    if (sentence_id{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_PDOP, ",")
         str.stripchar(tmp, ".")
         return str.atoi(tmp)
 
-PUB Seconds{}: s
-' Return last read seconds (u8)
-    return (timeofday{} // 100)
-
-PUB SentencePtr(ptr_sntnc)
+PUB ptr_sentence(ptr_sntnc)
 ' Set pointer to NMEA0183 sentence data
 '   Valid values: $0004..$7fae
 '   Any other value returns the current setting
@@ -337,16 +333,20 @@ PUB SentencePtr(ptr_sntnc)
         other:
             return _ptr_sntnc
 
-PUB SentenceID{}: sid | idx
+PUB seconds{}: s
+' Return last read seconds (u8)
+    return (time_of_day{} // 100)
+
+PUB sentence_id{}: sid | idx
 ' Extract Sentence ID from a sentence
 '   Returns: 3-byte sentence ID (ASCII)
     repeat idx from SID_ST to SID_END
         sid.byte[idx-SID_ST] := byte[_ptr_sntnc][idx]
 
-PUB SpeedKnots{}: spd
+PUB speed_kts{}: spd
 ' Speed over ground, in hundredths of a knot
 '   (e.g., 361 == 3.61kts)
-    case sentenceid{}
+    case sentence_id{}
         SNTID_VTG:
             spd := str.getfield(_ptr_sntnc, VTG_SPD_KTS, ",")
             str.stripchar(spd, ".")
@@ -356,21 +356,21 @@ PUB SpeedKnots{}: spd
             str.stripchar(spd, ".")
             return str.atoi(spd)
 
-PUB SpeedKmh{}: spd
+PUB speed_kmh{}: spd
 ' Speed over ground, in hundredths of a kmh
 '   (e.g., 361 == 3.61kts)
-    if (sentenceid{} == SNTID_VTG)
+    if (sentence_id{} == SNTID_VTG)
         spd := str.getfield(_ptr_sntnc, VTG_SPD_KMH, ",")
         str.stripchar(spd, ".")
         return str.atoi(spd)
 
-PUB TalkerID{}: tid
+PUB talker_id{}: tid
 ' Extract Talker ID from a sentence
 '   Returns:
 '       2-byte talker ID (ASCII)
     return word[_ptr_sntnc][TID_ST]
 
-PUB TimeOfDay{}: tod | tmp
+PUB time_of_day{}: tod | tmp
 ' Extract time of day from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
@@ -385,20 +385,20 @@ PUB TimeOfDay{}: tod | tmp
     tmp := str.getfield(_ptr_sntnc, RMC_ZTIME, ",")
     return str.atoi(tmp)
 
-PUB VDOP{}: v | tmp, tmp2[4]
+PUB vdop{}: v | tmp, tmp2[4]
 ' Vertical dilution of precision
 '   Returns: DOP (hundredths)
     bytefill(@tmp, 0, 5)
-    if (sentenceid{} == SNTID_GSA)
+    if (sentence_id{} == SNTID_GSA)
         tmp := str.getfield(_ptr_sntnc, GSA_VDOP, ",")
         bytemove(@tmp2, tmp, strsize(tmp))      ' XXX temp hack to fix mem
         tmp2 := str.getfield(@tmp2, 0, "*")      '   corruption
         str.stripchar(tmp2, ".")
         return str.atoi(tmp2)
 
-PUB Year{}: y | tmp
+PUB year{}: y | tmp
 ' Get current year
-    return (fulldate{} // 100)
+    return (full_date{} // 100)
 
 DAT
 {

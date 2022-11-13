@@ -6,7 +6,7 @@
         to parse AIS sentences. (P2 version)
     Copyright (c) 2022
     Started Jul 7, 2022
-    Updated Jul 7, 2022
+    Updated Nov 13, 2022
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -25,7 +25,6 @@ OBJ
 
     cfg     : "boardcfg.p2eval"
     ser     : "com.serial.terminal.ansi"
-    time    : "time"
     nmea    : "protocol.navigation.nmea0183"
 
 DAT
@@ -34,32 +33,31 @@ DAT
 
     byte ser.CR, ser.LF, 0
 
-PUB Main()
+PUB main()
 
     setup()
 
-    nmea.sentenceptr(@_sentence)                ' tell NMEA0183 object where
-                                                '   the raw sentence data is
+    nmea.ptr_sentence(@_sentence)               ' tell NMEA0183 object where the sentence data is
 
     if (byte[@_sentence][0] := nmea.AIS_START)
-        ser.position(0, 3)
+        ser.pos_xy(0, 3)
         ' show the raw sentence
         ser.printf(string("Sentence: %s"), @_sentence)
-        ser.clearline()
+        ser.clear_line()
         ser.newline()
         display_vdm()
     repeat
 
-PUB Display_VDM()
+PUB display_vdm()
 
-    ser.printf(@"Total sentences in message: %d\n\r", nmea.ais_msglen())
-    ser.printf(@"Sentence number: %d\n\r", nmea.ais_sntnumb())
-    ser.printf(@"Sequential message ID: %s\n\r", nmea.ais_seqmsgid())
+    ser.printf(@"Total sentences in message: %d\n\r", nmea.ais_msg_len())
+    ser.printf(@"Sentence number: %d\n\r", nmea.ais_sentence_nr())
+    ser.printf(@"Sequential message ID: %s\n\r", nmea.ais_seq_msg_id())
     ser.printf(@"AIS channel: %c\n\r", nmea.ais_channel())
     ser.printf(@"AIS message: %s\n\r", nmea.ais_message())
     ser.printf(@"AIS message fill bits: %d\n\r", nmea.ais_fillbits())
 
-PUB Setup()
+PUB setup()
 
     ser.start(SER_BAUD)
     waitms(30)
