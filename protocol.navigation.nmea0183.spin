@@ -135,29 +135,35 @@ VAR
     byte _secs, _mins, _hours
     byte _wkdays, _days, _months, _years
 
+
+    { AIS }
+    long _ais_channel, _ais_fillbits, _ais_message, _ais_msg_len, _ais_seq_msg_id, _ais_sent_nr
+    long _total_vdm
+
 PUB ais_channel(): c
 ' AIS channel
-    bytemove(@c, str.getfield(_ptr_sentence, 4, ","), 1)
+    return _ais_channel
 
 PUB ais_fillbits(): f
 ' Number of message fill bits
-    return str.atoi(str.getfield(_ptr_sentence, 6, ","))
+    return _ais_fillbits
 
 PUB ais_message(): m
 ' Encapsulated message (ITU-R M.1371)
-    return str.getfield(_ptr_sentence, 5, ",")
+    return _ais_message
 
 PUB ais_msg_len(): c
 ' Total number of AIS sentences needed to transfer the message
-    return str.atoi(str.getfield(_ptr_sentence, 1, ","))
+    return _ais_msg_len
 
 PUB ais_seq_msg_id(): s
 ' AIS sequential message identifier (0..9)
-    return str.getfield(_ptr_sentence, 3, ",")
+    return _ais_seq_msg_id
 
 PUB ais_sentence_nr(): s
 ' AIS sentence number (1..9)
-    return str.atoi(str.getfield(_ptr_sentence, 2, ","))
+    return _ais_sent_nr
+
 
 PUB checksum(): rd_ck | idx, tmp
 ' Extract Checksum from a sentence
@@ -404,6 +410,17 @@ PUB parse_rmc() | tmp
         tmp := str.getfield(_ptr_sentence, RMC_ZTIME, ",")
         _ztime := str.atoi(tmp)
         extract_time_parts()
+
+PUB parse_vdm() | tmp
+' Parse received (from remote) AIS sentence
+    if ( sentence_id() == SNTID_VDM )
+        _total_vdm++
+    bytemove(@_ais_channel, str.getfield(_ptr_sentence, 4, ","), 1)
+    _ais_fillbits := str.atoi(str.getfield(_ptr_sentence, 6, ","))
+    _ais_message := str.getfield(_ptr_sentence, 5, ",")
+    _ais_msg_len := str.atoi(str.getfield(_ptr_sentence, 1, ","))
+    _ais_seq_msg_id := str.getfield(_ptr_sentence, 3, ",")
+    _ais_sent_nr := str.atoi(str.getfield(_ptr_sentence, 2, ","))
 
 PUB parse_vtg() | tmp
 ' Parse VTG (Actual track made good and speed over ground) sentence

@@ -4,9 +4,9 @@
     Author: Jesse Burt
     Description: Simple demo that uses the NMEA0183 object
         to parse AIS sentences.
-    Copyright (c) 2022
+    Copyright (c) 2023
     Started Jul 7, 2022
-    Updated Nov 13, 2022
+    Updated Jun 27, 2023
     See end of file for terms of use.
     --------------------------------------------
 }
@@ -39,6 +39,7 @@ PUB main{}
     setup{}
 
     nmea.ptr_sentence(@_sentence)               ' tell NMEA0183 object where the sentence data is
+    nmea.parse_vdm()
 
     if (byte[@_sentence][0] := nmea#AIS_START)
         ser.pos_xy(0, 3)
@@ -67,7 +68,7 @@ PUB setup{}
 
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2023 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

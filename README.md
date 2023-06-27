@@ -16,23 +16,29 @@ This is a P8X32A/Propeller library object for parsing NMEA-0183 sentences
 * VTG, RMC: Course over ground (true)
 * AIS sentence parsing (VDM - preliminary, very limited)
 
+
 ## Requirements
 
 * Any source of NMEA-0183 sentences (including, but not limited to a GPS receiver)
-* Buffer of (typ.) 81 bytes in length containing the sentence to be parsed
+* Buffer of (typ.) 83 bytes in length containing the sentence to be parsed
+
 
 ## Compiler Compatibility
 
-| Processor | Language | Compiler               | Backend     | Status                |
-|-----------|----------|------------------------|-------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (5.9.13-beta) | Bytecode    | OK                    |
-| P1        | SPIN1    | FlexSpin (5.9.13-beta) | Native code | OK                    |
-| P1        | SPIN1    | OpenSpin (1.00.81)     | Bytecode    | Untested (deprecated) |
-| P2        | SPIN2    | FlexSpin (5.9.13-beta) | NuCode      | OK                    |
-| P2        | SPIN2    | FlexSpin (5.9.13-beta) | Native code | OK                    |
-| P1        | SPIN1    | Brad's Spin Tool (any) | Bytecode    | Unsupported           |
-| P1, P2    | SPIN1, 2 | Propeller Tool (any)   | Bytecode    | Unsupported           |
-| P1, P2    | SPIN1, 2 | PNut (any)             | Bytecode    | Unsupported           |
+| Processor | Language | Compiler               | Backend      | Status                |
+|-----------|----------|------------------------|--------------|-----------------------|
+| P1        | SPIN1    | FlexSpin (6.1.1)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (6.1.1)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (6.1.1)       | NuCode       | OK                    |
+| P2        | SPIN2    | FlexSpin (6.1.1)       | Native/PASM2 | OK                    |
+
+(other versions or toolchains not listed are __not supported__, and _may or may not_ work)
+
+
+## Hardware compatibility
+
+* Tested with UART-connected GPS receivers
+
 
 ## Limitations
 
