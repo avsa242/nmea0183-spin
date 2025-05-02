@@ -1,82 +1,85 @@
 {
-    --------------------------------------------
-    Filename: NMEA0183-Demo_Parse.spin
-    Author: Jesse Burt
-    Description: Demo of the NMEA0183 library
-        * Parsed sentence output
-        * Logged raw sentences
-    Copyright (c) 2023
-    Started Sep 8, 2019
-    Updated Jun 27, 2023
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       NMEA0183-Demo_Parse.spin
+    Description:    Simple demo that uses the NMEA0183 object
+        to parse sentences read from a compatible serial-connected
+        GPS module and displays the data on the terminal.
+    Author:         Jesse Burt
+    Started:        Sep 8, 2019
+    Updated:        May 2, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
-' -- User-defined constants
+' -- User-modifiable constants
     SER_BAUD    = 115_200
 
-    GPS_TXD     = 8
-    GPS_RXD     = 9
+    GPS_TXD     = 24
+    GPS_RXD     = 25
+
     GPS_BAUD    = 9600
 ' --
 
 OBJ
 
-    cfg:    "boardcfg.flip"
     ser:    "com.serial.terminal.ansi"
-    time:   "time"
+    gps:    "com.serial.terminal.ansi"
     nmea:   "protocol.navigation.nmea0183"
-    gps:    "com.serial.terminal"
+    time:   "time"
 
-PUB main() | x, y
+
+VAR
+
+    byte _sentence[nmea.SENTENCE_MAX_LEN]
+
+PUB main()
 
     setup()
+    ser.clear()
 
-    x := 0
-    y := 3
-    ser.text_win(@"Sentence log", x, y, LOG_W, LOG_H, ser.GREY, ser.BLACK, ser.WHITE)
-
+    nmea.init(@_sentence)                       ' tell NMEA0183 object where the sentence data is
     repeat
-        read_sentence()
-        ifnot ( nmea.sentence_good() )
+        read_sentence()                         ' read a sentence into the buffer
+        ifnot ( nmea.sentence_good() )          ' if the checksum is bad, skip it
             next
 
-        { display the GPS sentences in a scrolled window }
-        msg_scroll_up(@_sentence, x, y)
-
-        ser.printf4(@"\n\r\n\rTotal received\tGGA: %5d GSA: %5d RMC: %5d VTG: %5d\n\r", ...
+        ser.pos_xy(0, 3)
+        ser.str(@_sentence)
+        ser.clear_line()
+        ser.printf(@"\n\r\n\rTotal received\tGGA: %5d GSA: %5d RMC: %5d VTG: %5d GSV: %5d\n\r", ...
                     nmea._total_gga, ...
                     nmea._total_gsa, ...
                     nmea._total_rmc, ...
-                    nmea._total_vtg )
-        ser.printf1(@"Bad checksum: %5d\n\r", nmea._total_bad)
+                    nmea._total_vtg, ...
+                    nmea._total_gsv )
+        ser.printf(@"Bad checksum: %5d\n\r", nmea._total_bad)
 
         { parse each sentence }
         case nmea.sentence_id()
-            nmea#SNTID_GGA:
+            nmea.SNTID_GGA:
                 nmea.parse_gga()
-            nmea#SNTID_GSA:
+            nmea.SNTID_GSA:
                 nmea.parse_gsa()
-            nmea#SNTID_GSV:
-            nmea#SNTID_RMC:
+            nmea.SNTID_GSV:
+                nmea.parse_gsv()
+            nmea.SNTID_RMC:
                 nmea.parse_rmc()
-            nmea#SNTID_VTG:
+            nmea.SNTID_VTG:
                 nmea.parse_vtg()
 
         { display the parsed data }
-        ser.pos_xy(0, y+10)
-        ser.printf4(@"Latitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
+        ser.printf(@"Latitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
                     nmea.lat_deg(), ...
                     nmea.lat_minutes_whole(), ...
                     nmea.lat_minutes_part(), ...
                     nmea.north_south() )
 
-        ser.printf4(@"Longitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
+        ser.printf(@"Longitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
                     nmea.long_deg(), ...
                     nmea.long_minutes_whole(), ...
                     nmea.long_minutes_part(), ...
@@ -98,70 +101,34 @@ PUB main() | x, y
                 ser.strln(@"3D fix     ")
         ser.fgcolor(ser.GREY)
 
-        ser.printf2(@"HDOP: %2.2d.%02.2d\n\r", (nmea.hdop() / 100), (nmea.hdop() // 100) )
-        ser.printf2(@"PDOP: %2.2d.%02.2d\n\r", (nmea.pdop() / 100), (nmea.pdop() // 100) )
-        ser.printf2(@"VDOP: %2.2d.%02.2d\n\r", (nmea.vdop() / 100), (nmea.vdop() // 100) )
+        ser.printf(@"HDOP: %2.2d.%02.2d\n\r", (nmea.hdop() / 100), (nmea.hdop() // 100) )
+        ser.printf(@"PDOP: %2.2d.%02.2d\n\r", (nmea.pdop() / 100), (nmea.pdop() // 100) )
+        ser.printf(@"VDOP: %2.2d.%02.2d\n\r", (nmea.vdop() / 100), (nmea.vdop() // 100) )
 
-        ser.printf3(@"Date: %02.2d/%02.2d/%02.2d\n\r",  nmea.month(), ...
+        ser.printf(@"Date: %02.2d/%02.2d/%02.2d\n\r",   nmea.month(), ...
                                                         nmea.date(), ...
                                                         nmea.year() )
 
-        ser.printf3(@"Time: %02.2d:%02.2d:%02.2d\n\r",  nmea.hours(), ...
+        ser.printf(@"Time: %02.2d:%02.2d:%02.2d\n\r",   nmea.hours(), ...
                                                         nmea.minutes(), ...
                                                         nmea.seconds() )
 
-        ser.printf2(@"Course (true): %03.3d.%02.2d\302\260\n\r", ...
+        ser.printf(@"Course (true): %03.3d.%02.2d\302\260\n\r", ...
                     (nmea.course_true() / 100), ...
                     (nmea.course_true() // 100) )
+        ser.printf(@"Course (magnetic): %d\302\260    \n\r", nmea.course_magnetic() )
 
-        ser.printf1(@"Course (magnetic): %d\302\260    \n\r", nmea.course_magnetic() )
-
-        ser.printf2(@"Speed: %d.%02.2dkts\n\r", (nmea.speed_kts() / 100), ...
+        ser.printf(@"Speed: %d.%02.2dkts\n\r",  (nmea.speed_kts() / 100), ...
                                                 (nmea.speed_kts // 100) )
 
-        ser.printf1(@"Speed: %dkm/h    \n\r", nmea.speed_kmh() )
+        ser.printf(@"Speed: %dkm/h    \n\r", nmea.speed_kmh() )
 
-CON
 
-    WIDTH       = 104                           ' terminal width
-    HEIGHT      = 44                            ' height
-    LINEWIDTH   = 90                            ' window (inner) width
-    LINES       = 5                             ' height
-
-    LASTLINE    = LINES-1
-    BTM         = LINEWIDTH*LASTLINE
-    SCRLBYTES   = BTM-1
-    LOGBUFFSZ   = LINEWIDTH * LINES
-
-    LOG_W       = LINEWIDTH+2
-    LOG_H       = LINES+2
-
-    TOP         = 0
-    LINE1       = TOP+LINEWIDTH
-    LINE2       = LINE1+LINEWIDTH
-    LINE3       = LINE2+LINEWIDTH
-
-VAR byte _logbuff[LOGBUFFSZ], _msg[LINEWIDTH]
-
-PUB msg_scroll_up(ptr_msg, x, y) | ln, ins_left, ins_top
-' Scroll a message buffer up one line and add new message to the bottom row
-    ins_left := x+1
-    ins_top := y+1
-
-    ' scroll lines from bottom line up
-    bytemove(@_logbuff[TOP], @_logbuff[LINE1], SCRLBYTES)
-    ' move the new message into the bottom line
-    bytemove(@_logbuff[BTM], ptr_msg, LINEWIDTH)
-    ' now display them
-    repeat ln from 0 to LASTLINE
-        ser.pos_xy(ins_left, ins_top+ln)
-        ser.puts(@_logbuff[LINEWIDTH*ln])
-
-VAR byte _sentence[nmea.SENTENCE_MAX_LEN]
 PUB read_sentence()
 
-    repeat until ( gps.getchar() == nmea#SENTSTART )
+    repeat until ( gps.getchar() == nmea.SENTSTART )
     gps.gets(@_sentence)                    ' read sentence data (ASCII)
+
 
 PUB setup()
 
@@ -169,19 +136,13 @@ PUB setup()
     time.msleep(30)
     ser.clear()
     ser.strln(@"Serial terminal started")
+    gps.startrxtx(GPS_TXD, GPS_RXD, %0000, GPS_BAUD)
+    ser.strln(@"GPS serial started")
 
-    if ( gps.init(GPS_TXD, GPS_RXD, 0, GPS_BAUD) )
-        ser.strln(@"PA1010D driver started (UART)")
-    else
-        ser.strln(@"PA1010D driver failed to start - halting")
-        repeat
-
-    { point the nmea0183 object to the location of the sentence }
-    nmea.ptr_sentence( @_sentence )
 
 DAT
 {
-Copyright 2023 Jesse Burt
+Copyright 2022 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

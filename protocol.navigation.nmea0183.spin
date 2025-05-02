@@ -1,14 +1,12 @@
 {
-    --------------------------------------------
-    Filename: protocol.navigation.nmea0183.spin
-    Author: Jesse Burt
-    Description: Library of functions for parsing
-        NMEA-0183 sentences
-    Copyright (c) 2023
-    Started Sep 7, 2019
-    Updated Jun 27, 2023
-    See end of file for terms of use.
-    --------------------------------------------
+----------------------------------------------------------------------------------------------------
+    Filename:       protocol.navigation.nmea0183.spin
+    Description:    Library of functions for parsing NMEA-0183 sentences
+    Author:         Jesse Burt
+    Started:        Sep 7, 2019
+    Updated:        May 2, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
 
 CON
@@ -140,32 +138,43 @@ VAR
     long _ais_channel, _ais_fillbits, _ais_message, _ais_msg_len, _ais_seq_msg_id, _ais_sent_nr
     long _total_vdm
 
+
+PUB init(p_sentence)
+' Set pointer to NMEA0183 sentence data
+    _ptr_sentence := p_sentence
+
+
 PUB ais_channel(): c
 ' AIS channel
     return _ais_channel
+
 
 PUB ais_fillbits(): f
 ' Number of message fill bits
     return _ais_fillbits
 
+
 PUB ais_message(): m
 ' Encapsulated message (ITU-R M.1371)
     return _ais_message
+
 
 PUB ais_msg_len(): c
 ' Total number of AIS sentences needed to transfer the message
     return _ais_msg_len
 
+
 PUB ais_seq_msg_id(): s
 ' AIS sequential message identifier (0..9)
     return _ais_seq_msg_id
+
 
 PUB ais_sentence_nr(): s
 ' AIS sentence number (1..9)
     return _ais_sent_nr
 
 
-PUB checksum(): rd_ck | idx, tmp
+PUB checksum(): c | idx, tmp
 ' Extract Checksum from a sentence
 '   Returns: Checksum contained in sentence at _ptr_sentence
     idx := 0
@@ -174,26 +183,33 @@ PUB checksum(): rd_ck | idx, tmp
     tmp.byte[1] := byte[_ptr_sentence][++idx]
     tmp.word[1] := 0
 
-    return str.atoib(@tmp, str#IHEX)
+    return str.atoib(@tmp, str.IHEX)
+
 
 PUB course_magnetic(): c
 ' Course over ground (magnetic)
 '   Returns: hundredths of a degree
     return _course_mag
 
+
 PUB course_true(): c
 ' Course over ground (true)
 '   Returns: hundredths of a degree
     return _course_true
 
+
 PUB date(): d
 ' Get current date/day of month
     return _days
 
+
 PUB east_west(): ew
 ' Indicates East/West of Prime Meridian
 '   Returns: E or W (ASCII)
+    if( (_east_west <> "E") and (_east_west <> "W") )
+        _east_west := "?"
     return _east_west
+
 
 PUB fix(): f
 ' Indicates position fix
@@ -204,38 +220,44 @@ PUB fix(): f
 '       3 - 3D fix
     return _fix
 
+
 PUB full_date(): d
 ' Full date (day, month, year)
 '   Returns: integer (ddmmyy)
     return _date
 
-PUB gen_checksum(): cksum | idx
+
+PUB gen_checksum(): c | idx
 ' Calculate checksum of a sentence
 '   Returns: Calculated 8-bit checksum of sentence
-    cksum := idx := 0
+    c := idx := 0
 
-    if ( byte[_ptr_sentence][0] == SENTSTART )     ' skip over the start of sentence marker;
+    if ( byte[_ptr_sentence][0] == SENTSTART )  ' skip over the start of sentence marker;
         ++idx                                   '   it's not included in the checksum
     repeat
-        cksum ^= byte[_ptr_sentence][idx]
+        c ^= byte[_ptr_sentence][idx]
     while ( byte[_ptr_sentence][++idx] <> CRCMARKER )
 
-    return (cksum & $FF)
+    return (c & $FF)
+
 
 PUB hdop(): h
 ' Horizontal dilution of precision
 '   Returns: DOP (hundredths)
     return _hdop
 
+
 PUB hours(): h
 ' Return: last read hours (u8)
     return _hours
+
 
 PUB extract_date_parts()
 ' Extract parts of last read date
     _years := (_date // 100)
     _months := (_date / 10_000)
     _days := ((_date // 10_000) / 100)
+
 
 PUB extract_lat_parts()
 ' Extract components from last recorded latitude
@@ -244,6 +266,7 @@ PUB extract_lat_parts()
     _lat_mins_p := (_lat_mins // 10_000)
     _lat_mins_w := (_lat_mins / 10_000)
 
+
 PUB extract_long_parts()
 ' Extract components from last recorded longitude
     _long_degs := (_longitude / 1_000_000)
@@ -251,13 +274,15 @@ PUB extract_long_parts()
     _long_mins_p := (_long_mins // 10_000)
     _long_mins_w := (_long_mins / 10_000)
 
+
 PUB extract_time_parts()
 ' Extract parts of last read time
     _hours := (_ztime / 10_000)
     _mins := ((_ztime // 10_000) / 100)
     _secs := (_ztime // 100)
 
-PUB latitude(): lat
+
+PUB latitude(): l
 ' Extract latitude from a sentence
 '   Returns: Latitude in degrees and minutes packed into long
 '   Example:
@@ -270,23 +295,28 @@ PUB latitude(): lat
 '       40 deg, 05.6475 minutes
     return _latitude
 
+
 PUB lat_deg(): d
 ' Extract degrees from latitude
     return _lat_degs
+
 
 PUB lat_minutes(): m
 ' Extract minutes (whole and part) from latitude
     return _lat_mins
 
+
 PUB lat_minutes_part(): m
 ' Extract minutes (part) from latitude
     return _lat_mins_p
+
 
 PUB lat_minutes_whole(): m
 ' Extract minutes (whole) from latitude
     return _lat_mins_w
 
-PUB longitude(): lon
+
+PUB longitude(): l
 ' Extract longitude from a sentence
 '   Returns: Longitude in degrees and minutes packed into long
 '   Example:
@@ -299,34 +329,44 @@ PUB longitude(): lon
 '       074 deg, 11.4014 minutes
     return _longitude
 
+
 PUB long_deg(): d
 ' Extract degrees from longitude
     return _long_degs
+
 
 PUB long_minutes(): m
 ' Extract minutes (whole and part) from longitude
     return _long_mins
 
+
 PUB long_minutes_part(): m
 ' Extract minutes (part) from longitude
     return _long_mins_p
+
 
 PUB long_minutes_whole(): m
 ' Extract minutes (whole) from longitude
     return _long_mins_w
 
+
 PUB minutes(): m
 ' Return last read minutes (u8)
     return _mins
+
 
 PUB month(): m
 ' Get current month
     return _months
 
+
 PUB north_south(): ns
 ' Indicates North/South of equator
 '   Returns: N/S (ASCII)
+    if( (_north_south <> "N") and (_north_south <> "S") )
+        _north_south := "?"
     return _north_south
+
 
 PUB parse_gga() | tmp
 ' Parse GGA (Time, position, and fix related data) sentence
@@ -352,6 +392,7 @@ PUB parse_gga() | tmp
         _ztime := str.atoi(tmp)
         extract_time_parts()
 
+
 PUB parse_gsa() | tmp
 ' Parse GSA (GPS DOP and active satellites) sentence
     if ( sentence_id() == SNTID_GSA )
@@ -371,10 +412,12 @@ PUB parse_gsa() | tmp
         str.stripchar(tmp, ".")
         _vdop := str.atoi(tmp)
 
+
 PUB parse_gsv() | tmp
 ' Parse GSV (Number of SVs in view, PRN, elevation, azimuth, and SNR) sentence
     if ( sentence_id() == SNTID_GSV )
         _total_gsv++
+
 
 PUB parse_rmc() | tmp
 ' Parse RMC (Position, Velocity, and Time) sentence
@@ -411,6 +454,7 @@ PUB parse_rmc() | tmp
         _ztime := str.atoi(tmp)
         extract_time_parts()
 
+
 PUB parse_vdm() | tmp
 ' Parse received (from remote) AIS sentence
     if ( sentence_id() == SNTID_VDM )
@@ -421,6 +465,7 @@ PUB parse_vdm() | tmp
     _ais_msg_len := str.atoi(str.getfield(_ptr_sentence, 1, ","))
     _ais_seq_msg_id := str.getfield(_ptr_sentence, 3, ",")
     _ais_sent_nr := str.atoi(str.getfield(_ptr_sentence, 2, ","))
+
 
 PUB parse_vtg() | tmp
 ' Parse VTG (Actual track made good and speed over ground) sentence
@@ -442,24 +487,17 @@ PUB parse_vtg() | tmp
         str.stripchar(tmp, ".")
         _speed_kmh := str.atoi(tmp)
 
+
 PUB pdop(): p
 ' Position dilution of precision
 '   Returns: DOP (hundredths)
     return _pdop
 
-PUB ptr_sentence(ptr_sntnc)
-' Set pointer to NMEA0183 sentence data
-'   Valid values: $0004..$7fae
-'   Any other value returns the current setting
-    case ptr_sntnc
-        $0004..$7fae:
-            _ptr_sentence := ptr_sntnc
-        other:
-            return _ptr_sentence
 
 PUB seconds(): s
 ' Return last read seconds (u8)
     return _secs
+
 
 PUB sentence_good(): t
 ' Verify last sentence recorded is valid (checksum good)
@@ -467,29 +505,34 @@ PUB sentence_good(): t
     ifnot ( t )
         _total_bad++
 
-PUB sentence_id(): sid | idx
+
+PUB sentence_id(): i | idx
 ' Extract Sentence ID from a sentence
 '   Returns: 3-byte sentence ID (ASCII)
     repeat idx from SID_ST to SID_END
-        sid.byte[idx-SID_ST] := byte[_ptr_sentence][idx]
+        i.byte[idx-SID_ST] := byte[_ptr_sentence][idx]
 
-PUB speed_kts(): spd
+
+PUB speed_kts(): s
 ' Speed over ground, in hundredths of a knot
 '   (e.g., 361 == 3.61kts)
     return _speed_kts
 
-PUB speed_kmh(): spd
+
+PUB speed_kmh(): s
 ' Speed over ground, in hundredths of a kmh
 '   (e.g., 361 == 3.61kts)
     return _speed_kmh
 
-PUB talker_id(): tid
+
+PUB talker_id(): i
 ' Extract Talker ID from a sentence
 '   Returns:
 '       2-byte talker ID (ASCII)
     return word[_ptr_sentence][TID_ST]
 
-PUB time_of_day(): tod
+
+PUB time_of_day(): t
 ' Extract time of day (UTC/Zulu) from a sentence
 '   Returns: Time, in hours, minutes, seconds packed into long
 '   Example:
@@ -503,18 +546,21 @@ PUB time_of_day(): tod
 ' NOTE: This method returns valid data for both GGA and RMC sentence types
     return _ztime
 
+
 PUB vdop(): v
 ' Vertical dilution of precision
 '   Returns: DOP (hundredths)
     return _vdop
 
+
 PUB year(): y
 ' Get current year
     return _years
 
+
 DAT
 {
-Copyright 2022 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,

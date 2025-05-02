@@ -1,28 +1,27 @@
 {
-    --------------------------------------------
-    Filename: NMEA0183-Demo_Parse.spin2
-    Author: Jesse Burt
-    Description: Simple demo that uses the NMEA0183 object
+----------------------------------------------------------------------------------------------------
+    Filename:       NMEA0183-Demo_Parse.spin
+    Description:    Simple demo that uses the NMEA0183 object
         to parse sentences read from a compatible serial-connected
-        GPS module and displays the data on the terminal. (P2 version)
-    Copyright (c) 2022
-    Started Jul 7, 2022
-    Updated Nov 13, 2022
-    See end of file for terms of use.
-    --------------------------------------------
+        GPS module and displays the data on the terminal.
+    Author:         Jesse Burt
+    Started:        Jul 7, 2022
+    Updated:        May 2, 2025
+    Copyright (c) 2025 - See end of file for terms of use.
+----------------------------------------------------------------------------------------------------
 }
+
 #include "core.con.click.spin2"
 
 CON
 
-    _clkfreq    = cfg._clkfreq_def
-    _xtlfreq    = cfg._xtlfreq
+    _clkfreq    = 180_000_000
+    _xtlfreq    = 20_000_000
 
 ' -- User-modifiable constants
-    LED         = cfg.LED1
     SER_BAUD    = 2_000_000
 
-    CLICK_BASE  = 16
+    CLICK_BASE  = 0
 
     { uncomment these two lines, and comment out the #include above, to use custom I/O pins }
 '    GPS_TXD     = 1
@@ -33,106 +32,106 @@ CON
 
 OBJ
 
-    cfg     : "boardcfg.p2eval"
-    ser     : "com.serial.terminal.ansi"
-    gps     : "com.serial.terminal"
-    nmea    : "protocol.navigation.nmea0183"
+    ser:    "com.serial.terminal.ansi"
+    gps:    "com.serial.terminal"
+    nmea:   "protocol.navigation.nmea0183"
 
 VAR
 
-    byte _sentence[nmea.SENTNC_MAX_LEN]
+    byte _sentence[nmea.SENTENCE_MAX_LEN]
 
-PUB main() | allowed
+PUB main()
 
     setup()
+    ser.clear()
 
-    nmea.ptr_sentence(@_sentence)               ' tell NMEA0183 object where the sentence data is
-
-    { sentence type to display:
-        SNTID_VTG, SNTID_GGA, SNTID_GSA, SNTID_RMC, SNTID_GSV }
-    allowed := nmea.SNTID_RMC
-
+    nmea.init(@_sentence)                       ' tell NMEA0183 object where the sentence data is
     repeat
-        ' clear out sentence buffer
-        bytefill(@_sentence, 0, nmea.SENTNC_MAX_LEN)
-
-        repeat until (gps.getchar() == nmea.SENTSTART)
-        gps.gets(@_sentence)                    ' read sentence data (ASCII)
-
-        if (nmea.sentence_id() == allowed)
-            ser.pos_xy(0, 3)
-            ' show the raw sentence
-            ser.printf(@"Sentence: %s", @_sentence)
-            ser.clear_line()
-            ser.newline()
-            case nmea.sentence_id()             ' now extract and print data
-                nmea.SNTID_VTG:                 '   pertinent to each sentence
-                    display_vtg()
-                nmea.SNTID_GGA:
-                    display_gga()
-                nmea.SNTID_GSA:
-                    display_gsa()
-                nmea.SNTID_RMC:
-                    display_rmc()
-                nmea.SNTID_GSV:
-                    display_gsv()
-        else
+        read_sentence()                         ' read a sentence into the buffer
+        ifnot ( nmea.sentence_good() )          ' if the checksum is bad, skip it
             next
 
-PUB display_gga()
+        ser.pos_xy(0, 3)
+        ser.str(@_sentence)
+        ser.clear_line()
+        ser.printf(@"\n\r\n\rTotal received\tGGA: %5d GSA: %5d RMC: %5d VTG: %5d GSV: %5d\n\r", ...
+                    nmea._total_gga, ...
+                    nmea._total_gsa, ...
+                    nmea._total_rmc, ...
+                    nmea._total_vtg, ...
+                    nmea._total_gsv )
+        ser.printf(@"Bad checksum: %5d\n\r", nmea._total_bad)
 
-    disp_pos()
-    ser.printf(@"Time: %d\n\r", nmea.time_of_day())
+        { parse each sentence }
+        case nmea.sentence_id()
+            nmea.SNTID_GGA:
+                nmea.parse_gga()
+            nmea.SNTID_GSA:
+                nmea.parse_gsa()
+            nmea.SNTID_GSV:
+                nmea.parse_gsv()
+            nmea.SNTID_RMC:
+                nmea.parse_rmc()
+            nmea.SNTID_VTG:
+                nmea.parse_vtg()
 
-PUB display_gsa() | fix_stat
+        { display the parsed data }
+        ser.printf(@"Latitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
+                    nmea.lat_deg(), ...
+                    nmea.lat_minutes_whole(), ...
+                    nmea.lat_minutes_part(), ...
+                    nmea.north_south() )
 
-    case nmea.fix()
-        1:
-            fix_stat := @"No fix"
-        2:
-            fix_stat := @"2D fix"
-        3:
-            fix_stat := @"3D fix"
+        ser.printf(@"Longitude: %02.2d\302\260 %02.2d.%04.4dmin %c\n\r", ...
+                    nmea.long_deg(), ...
+                    nmea.long_minutes_whole(), ...
+                    nmea.long_minutes_part(), ...
+                    nmea.east_west() )
 
-    ser.printf(@"Position fix: %s\n\r", fix_stat)
-    ser.printf(@"HDOP: %d   \n\r", nmea.hdop())
-    ser.printf(@"PDOP: %d   \n\r", nmea.pdop())
-    ser.printf(@"VDOP: %d   \n\r", nmea.vdop())
+        ser.str(@"Position fix: ")
+        case nmea.fix()
+            0:
+                ser.fgcolor(ser.RED|ser.BRIGHT)
+                ser.strln(@"No data yet")
+            1:
+                ser.fgcolor(ser.RED)
+                ser.strln(@"No fix     ")
+            2:
+                ser.fgcolor(ser.BLUE)
+                ser.strln(@"2D fix     ")
+            3:
+                ser.fgcolor(ser.GREEN)
+                ser.strln(@"3D fix     ")
+        ser.fgcolor(ser.GREY)
 
-PUB display_gsv()
+        ser.printf(@"HDOP: %2.2d.%02.2d\n\r", (nmea.hdop() / 100), (nmea.hdop() // 100) )
+        ser.printf(@"PDOP: %2.2d.%02.2d\n\r", (nmea.pdop() / 100), (nmea.pdop() // 100) )
+        ser.printf(@"VDOP: %2.2d.%02.2d\n\r", (nmea.vdop() / 100), (nmea.vdop() // 100) )
 
-PUB display_rmc()
+        ser.printf(@"Date: %02.2d/%02.2d/%02.2d\n\r",   nmea.month(), ...
+                                                        nmea.date(), ...
+                                                        nmea.year() )
 
-    disp_pos()
-    ser.printf(@"Date: %02.2d/%02.2d/%02.2d\n\r", nmea.month(), nmea.date(), nmea.year())
+        ser.printf(@"Time: %02.2d:%02.2d:%02.2d\n\r",   nmea.hours(), ...
+                                                        nmea.minutes(), ...
+                                                        nmea.seconds() )
 
-    ser.printf(@"Time: %02.2d:%02.2d:%02.2d\n\r", nmea.hours(), nmea.minutes(), {
-}                                                 nmea.seconds())
+        ser.printf(@"Course (true): %03.3d.%02.2d\302\260\n\r", ...
+                    (nmea.course_true() / 100), ...
+                    (nmea.course_true() // 100) )
+        ser.printf(@"Course (magnetic): %d\302\260    \n\r", nmea.course_magnetic() )
 
-    ser.printf(@"Course (true): %03.3d.%02.2d\n\r", (nmea.course_true() / 100), {
-}                                                   (nmea.course_true() // 100))
+        ser.printf(@"Speed: %d.%02.2dkts\n\r",  (nmea.speed_kts() / 100), ...
+                                                (nmea.speed_kts // 100) )
 
-    ser.printf(@"Speed: %d.%02.2dkts\n\r", (nmea.speed_kts() / 100), {
-}                                          (nmea.speed_kts // 100))
+        ser.printf(@"Speed: %dkm/h    \n\r", nmea.speed_kmh() )
 
-PUB display_vtg()
 
-    ser.printf(@"Course (true): %d    \n\r", nmea.course_true())
-    ser.printf(@"Course (magnetic): %d    \n\r", nmea.course_magnetic())
-    ser.printf(@"Speed: %dkts    \n\r", nmea.speed_kts())
-    ser.printf(@"Speed: %dkm/h    \n\r", nmea.speed_kmh())
+PUB read_sentence()
 
-PRI disp_pos()
-' Display position
-    ser.printf(@"Latitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r", nmea.lat_deg(), {
-}                                                              nmea.lat_minutes_whole(), {
-}                                                              nmea.lat_minutes_part(), {
-}                                                              nmea.north_south())
+    repeat until ( gps.getchar() == nmea.SENTSTART )
+    gps.gets(@_sentence)                    ' read sentence data (ASCII)
 
-    ser.printf(@"Longitude: %02.2ddeg %02.2d.%04.4dmin %c\n\r", nmea.long_deg(), {
-}                                                               nmea.long_minutes_whole(),{
-}                                                               nmea.long_minutes_part(), {
-}                                                               nmea.east_west())
 
 PUB setup()
 
@@ -142,6 +141,7 @@ PUB setup()
     ser.strln(@"Serial terminal started")
     gps.startrxtx(GPS_TXD, GPS_RXD, %0000, GPS_BAUD)
     ser.strln(@"GPS serial started")
+
 
 DAT
 {

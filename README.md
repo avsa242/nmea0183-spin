@@ -1,7 +1,10 @@
 # nmea0183-spin
 ---------------
 
-This is a P8X32A/Propeller library object for parsing NMEA-0183 sentences
+This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 library object for parsing NMEA-0183 sentences
+
+**IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
+
 
 ## Salient features
 
@@ -19,6 +22,12 @@ This is a P8X32A/Propeller library object for parsing NMEA-0183 sentences
 
 ## Requirements
 
+P1/SPIN1:
+* spin-standard-library
+
+P2/SPIN2:
+* p2-spin-standard-library
+
 * Any source of NMEA-0183 sentences (including, but not limited to a GPS receiver)
 * Buffer of (typ.) 83 bytes in length containing the sentence to be parsed
 
@@ -27,10 +36,10 @@ This is a P8X32A/Propeller library object for parsing NMEA-0183 sentences
 
 | Processor | Language | Compiler               | Backend      | Status                |
 |-----------|----------|------------------------|--------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (6.1.1)       | Bytecode     | OK                    |
-| P1        | SPIN1    | FlexSpin (6.1.1)       | Native/PASM  | OK                    |
-| P2        | SPIN2    | FlexSpin (6.1.1)       | NuCode       | OK                    |
-| P2        | SPIN2    | FlexSpin (6.1.1)       | Native/PASM2 | OK                    |
+| P1        | SPIN1    | FlexSpin (6.9.4)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (6.9.4)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (6.9.4)       | NuCode       | OK                    |
+| P2        | SPIN2    | FlexSpin (6.9.4)       | Native/PASM2 | OK                    |
 
 (other versions or toolchains not listed are __not supported__, and _may or may not_ work)
 
@@ -42,5 +51,5 @@ This is a P8X32A/Propeller library object for parsing NMEA-0183 sentences
 
 ## Limitations
 
-* Library is very early in development and may malfunction, or outright fail to build
+* TBD
 

@@ -13,62 +13,62 @@
 
 CON
 
-    _clkmode    = cfg#_clkmode
-    _xinfreq    = cfg#_xinfreq
+    _clkmode    = xtal1+pll16x
+    _xinfreq    = 5_000_000
 
-' -- User-modifiable constants
-    LED         = cfg#LED1
-    SER_BAUD    = 115_200
-' --
 
 OBJ
 
-    cfg     : "boardcfg.flip"
-    ser     : "com.serial.terminal.ansi"
-    time    : "time"
-    nmea    : "protocol.navigation.nmea0183"
+    ser:    "com.serial.terminal.ansi" | SER_BAUD=115_200
+    nmea:   "protocol.navigation.nmea0183"
+    time:   "time"
+
 
 DAT
     { copy AIS sentence here }
     _sentence byte "!AIVDM,1,1,,A,177l?m9000`:Pk`<i`kh0lSd00R;,0*30"
 
-    byte ser#CR, ser#LF, 0
+    byte ser.CR, ser.LF, 0
 
-PUB main{}
 
-    setup{}
+PUB main()
 
-    nmea.ptr_sentence(@_sentence)               ' tell NMEA0183 object where the sentence data is
+    setup()
+
+    nmea.init(@_sentence)                       ' tell NMEA0183 object where the sentence data is
     nmea.parse_vdm()
 
-    if (byte[@_sentence][0] := nmea#AIS_START)
+    if (byte[@_sentence][0] := nmea.AIS_START)
         ser.pos_xy(0, 3)
         ' show the raw sentence
-        ser.printf1(string("Sentence: %s"), @_sentence)
-        ser.clear_line{}
-        ser.newline{}
-        display_vdm{}
+        ser.printf(@"Sentence: %s", @_sentence)
+        ser.clear_line()
+        ser.newline()
+        display_vdm()
     repeat
 
-PUB display_vdm{}
 
-    ser.printf1(@"Total sentences in message: %d\n\r", nmea.ais_msg_len{})
-    ser.printf1(@"Sentence number: %d\n\r", nmea.ais_sentence_nr{})
-    ser.printf1(@"Sequential message ID: %s\n\r", nmea.ais_seq_msg_id{})
-    ser.printf1(@"AIS channel: %c\n\r", nmea.ais_channel{})
-    ser.printf1(@"AIS message: %s\n\r", nmea.ais_message{})
-    ser.printf1(@"AIS message fill bits: %d\n\r", nmea.ais_fillbits{})
+PUB display_vdm()
 
-PUB setup{}
+    ser.printf(@"Total sentences in message: %d\n\r", nmea.ais_msg_len() )
+    ser.printf(@"Sentence number: %d\n\r", nmea.ais_sentence_nr() )
+    ser.printf(@"Sequential message ID: %s\n\r", nmea.ais_seq_msg_id() )
+    ser.printf(@"AIS channel: %c\n\r", nmea.ais_channel() )
+    ser.printf(@"AIS message: %s\n\r", nmea.ais_message() )
+    ser.printf(@"AIS message fill bits: %d\n\r", nmea.ais_fillbits() )
 
-    ser.start(SER_BAUD)
+
+PUB setup()
+
+    ser.start()
     time.msleep(30)
-    ser.clear{}
-    ser.strln(string("Serial terminal started"))
+    ser.clear()
+    ser.strln(@"Serial terminal started")
+
 
 DAT
 {
-Copyright 2023 Jesse Burt
+Copyright 2025 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
