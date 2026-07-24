@@ -4,8 +4,8 @@
     Description:    Library of functions for parsing NMEA-0183 sentences
     Author:         Jesse Burt
     Started:        Jul 7, 2022
-    Updated:        May 2, 2025
-    Copyright (c) 2025 - See end of file for terms of use.
+    Updated:        Jul 24, 2026
+    Copyright (c) 2026 - See end of file for terms of use.
 ----------------------------------------------------------------------------------------------------
 }
 
@@ -255,8 +255,8 @@ PUB hours(): h
 PUB extract_date_parts()
 ' Extract parts of last read date
     _years := (_date // 100)
-    _months := (_date / 10_000)
-    _days := ((_date // 10_000) / 100)
+    _months := (_date // 10_000) / 100
+    _days := (_date / 10_000)
 
 
 PUB extract_lat_parts()
@@ -560,7 +560,7 @@ PUB year(): y
 
 DAT
 {
-Copyright 2025 Jesse Burt
+Copyright 2026 Jesse Burt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
