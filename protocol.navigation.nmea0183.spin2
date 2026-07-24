@@ -15,15 +15,15 @@ CON
     SENTENCE_MAX_LEN= 83
 
 ' NMEA-0183 Sentence ID types
-    SNTID_VTG       = $475456
-    SNTID_GGA       = $414747
-    SNTID_GSA       = $415347
-    SNTID_RMC       = $434D52
-    SNTID_GSV       = $565347
+    SNTID_VTG       = %"VTG"
+    SNTID_GGA       = %"GGA"
+    SNTID_GSA       = %"GSA"
+    SNTID_RMC       = %"RMC"
+    SNTID_GSV       = %"GSV"
 
     { AIS }
-    SNTID_VDM       = $4D4456
-    SNTID_VDO       = $4F4456
+    SNTID_VDM       = %"VDM"
+    SNTID_VDO       = %"VDO"
 
 ' Talker ID, Sentence ID positions
     TID_ST          = 0
