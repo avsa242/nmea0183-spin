@@ -13,7 +13,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 library object for parsing NM
 * Sentence checksum verification
 * GGA, RMC: Position parsing (extract latitude as degrees minutes DDMMMMMM, longitude DDDMMMMMM - in whole or in part)
 * GSA: Position fix status, dilution of precision status (HDOP, VDOP, PDOP)
-* GGA, RMC: Time and date parsing (extract time from a sentence as any of: HHMMSS, HH, MM, SS)
+* GGA, RMC: Time and date (RMC) parsing (extract time from a sentence as any of: HHMMSS, HH, MM, SS)
 * VTG, RMC: Speed over ground (knots), VTG: km/h
 * VTG: Course over ground (magnetic)
 * VTG, RMC: Course over ground (true)
@@ -36,10 +36,10 @@ P2/SPIN2:
 
 | Processor | Language | Compiler               | Backend      | Status                |
 |-----------|----------|------------------------|--------------|-----------------------|
-| P1        | SPIN1    | FlexSpin (6.9.4)       | Bytecode     | OK                    |
-| P1        | SPIN1    | FlexSpin (6.9.4)       | Native/PASM  | OK                    |
-| P2        | SPIN2    | FlexSpin (6.9.4)       | NuCode       | OK                    |
-| P2        | SPIN2    | FlexSpin (6.9.4)       | Native/PASM2 | OK                    |
+| P1        | SPIN1    | FlexSpin (7.7.0)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (7.7.0)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (7.7.0)       | NuCode       | OK                    |
+| P2        | SPIN2    | FlexSpin (7.7.0)       | Native/PASM2 | OK                    |
 
 (other versions or toolchains not listed are __not supported__, and _may or may not_ work)
 
